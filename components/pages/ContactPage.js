@@ -5,167 +5,144 @@ import { useStore } from '@/lib/store';
 import { translations } from '@/lib/translations';
 
 export default function ContactPage() {
-  const { language } = useStore();
+  const { language, profile } = useStore();
   const t = translations[language] || translations.tr;
   
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
+  const [formData, setFormData] = useState({ subject: '', message: '' });
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Mailto linki oluştur
-    const mailtoLink = `mailto:destek@pomonero.com?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(
-      `Ad: ${formData.name}\nE-posta: ${formData.email}\n\nMesaj:\n${formData.message}`
-    )}`;
-    
-    // Mail uygulamasını aç
-    window.location.href = mailtoLink;
-    
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 5000);
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setSubmitting(true);
+    setError('');
+
+    try {
+      // FormSubmit.co kullanarak mail gönder - kullanıcı görmez
+      const response = await fetch('https://formsubmit.co/ajax/aliiduurak@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          _subject: `[Pomonero] ${formData.subject}`,
+          Kullanici: profile?.username || 'Anonim',
+          Email: profile?.email || 'Bilinmiyor',
+          Mesaj: formData.message,
+          _template: 'table'
+        })
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+        setFormData({ subject: '', message: '' });
+      } else {
+        throw new Error('Failed');
+      }
+    } catch (err) {
+      setError(language === 'tr' ? 'Mesaj gönderilemedi. Lütfen tekrar deneyin.' : 'Failed to send. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       {/* Hero */}
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 mb-6">
-          <span className="text-4xl">📧</span>
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 mb-4">
+          <span className="text-3xl">📧</span>
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: 'var(--text)' }}>
-          {t.contactTitle}
+        <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+          {language === 'tr' ? 'Bize Ulaşın' : 'Contact Us'}
         </h1>
-        <p className="text-lg" style={{ color: 'var(--text-muted)' }}>
-          {t.contactText}
+        <p style={{ color: 'var(--text-muted)' }}>
+          {language === 'tr' ? 'Soru, öneri veya geri bildirimlerinizi bekliyoruz.' : 'We welcome your questions, suggestions or feedback.'}
         </p>
       </div>
 
-      {/* Contact Info */}
-      <div className="card p-6 mb-6">
-        <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text)' }}>
-          <span>📬</span> {t.contactInfo}
-        </h3>
-        <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center">
-            <span className="text-2xl">✉️</span>
-          </div>
-          <div>
-            <p className="font-medium" style={{ color: 'var(--text)' }}>E-posta</p>
-            <a 
-              href="mailto:destek@pomonero.com" 
-              className="text-[var(--primary)] hover:underline"
-            >
-              destek@pomonero.com
-            </a>
-          </div>
-        </div>
-        <p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>
-          {language === 'tr' 
-            ? '📝 Aşağıdaki formu doldurduğunuzda e-posta uygulamanız açılacak ve mesajınızı gönderebileceksiniz.'
-            : '📝 When you fill out the form below, your email app will open and you can send your message.'}
-        </p>
-      </div>
-
-      {/* Contact Form */}
+      {/* Form Card */}
       <div className="card p-6">
         {submitted ? (
           <div className="text-center py-8">
-            <span className="text-6xl mb-4 block">✅</span>
+            <span className="text-5xl mb-4 block">✅</span>
             <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>
-              {language === 'tr' ? 'E-posta Uygulamanız Açıldı!' : 'Email App Opened!'}
+              {language === 'tr' ? 'Mesajınız Gönderildi!' : 'Message Sent!'}
             </h3>
-            <p style={{ color: 'var(--text-muted)' }}>
-              {language === 'tr' ? 'Mesajınızı göndermek için e-posta uygulamanızı kontrol edin.' : 'Check your email app to send your message.'}
+            <p className="mb-4" style={{ color: 'var(--text-muted)' }}>
+              {language === 'tr' ? 'En kısa sürede size dönüş yapacağız.' : 'We will get back to you soon.'}
             </p>
+            <button onClick={() => setSubmitted(false)} className="btn-primary">
+              {language === 'tr' ? 'Yeni Mesaj' : 'New Message'}
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                  {language === 'tr' ? 'Adınız' : 'Your Name'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="input-modern"
-                  placeholder={language === 'tr' ? 'Adınızı girin' : 'Enter your name'}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                  {t.contactEmail}
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="input-modern"
-                  placeholder="email@example.com"
-                  required
-                />
+            {/* User Info */}
+            <div className="p-3 rounded-xl" style={{ background: 'var(--surface)' }}>
+              <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
+                {language === 'tr' ? 'Gönderen' : 'From'}
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{profile?.avatar_emoji || '😊'}</span>
+                <span className="font-medium" style={{ color: 'var(--text)' }}>@{profile?.username || 'Kullanıcı'}</span>
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                {t.contactSubject}
+                {language === 'tr' ? 'Konu' : 'Subject'} *
               </label>
               <input
                 type="text"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 className="input-modern"
-                placeholder={language === 'tr' ? 'Konu başlığı' : 'Subject'}
+                placeholder={language === 'tr' ? 'Mesajınızın konusu' : 'Subject of your message'}
                 required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-                {t.contactMessage}
+                {language === 'tr' ? 'Mesaj' : 'Message'} *
               </label>
               <textarea
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                className="input-modern min-h-[150px] resize-none"
+                className="input-modern min-h-[120px] resize-none"
                 placeholder={language === 'tr' ? 'Mesajınızı buraya yazın...' : 'Write your message here...'}
                 required
               />
             </div>
 
-            <button type="submit" className="w-full btn-primary py-3">
-              📧 {t.contactSend}
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/20 text-red-400 text-sm">⚠️ {error}</div>
+            )}
+
+            <button type="submit" disabled={submitting} className="w-full btn-primary py-3 disabled:opacity-50">
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  {language === 'tr' ? 'Gönderiliyor...' : 'Sending...'}
+                </span>
+              ) : (
+                <span>📧 {language === 'tr' ? 'Gönder' : 'Send'}</span>
+              )}
             </button>
           </form>
         )}
       </div>
 
-      {/* Social Links */}
-      <div className="mt-8 text-center">
-        <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-          {language === 'tr' ? 'Bizi takip edin' : 'Follow us'}
+      {/* Info */}
+      <div className="mt-6 text-center">
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          {language === 'tr' 
+            ? 'Mesajınız doğrudan ekibimize ulaşacaktır.' 
+            : 'Your message will reach our team directly.'}
         </p>
-        <div className="flex justify-center gap-4">
-          <a href="https://twitter.com/pomonero" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
-            <span>🐦</span>
-          </a>
-          <a href="https://instagram.com/pomonero" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
-            <span>📸</span>
-          </a>
-          <a href="https://discord.gg/pomonero" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
-            <span>💬</span>
-          </a>
-        </div>
       </div>
     </div>
   );

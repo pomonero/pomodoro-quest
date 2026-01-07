@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500&family=Montserrat:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotto:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -29,29 +29,6 @@ body {
   overflow-x: hidden;
 }
 
-/* LOGO FONT STİLİ - İnce/Kalın kombinasyon */
-.font-logo-thin {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-  font-weight: 400;
-}
-
-.font-logo-bold {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 800;
-}
-
-/* Site genelinde başlıklar için */
-.heading-styled {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 700;
-}
-
-.text-styled-thin {
-  font-family: 'Playfair Display', serif;
-  font-style: italic;
-}
-
 /* TEMA CSS DEĞİŞKENLERİ */
 [data-theme="midnight"] {
   --background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
@@ -60,7 +37,6 @@ body {
   --primary: #6366f1;
   --primary-light: #818cf8;
   --secondary: #f472b6;
-  --accent: #22d3ee;
   --text: #ffffff;
   --text-muted: #94a3b8;
   --border: rgba(255, 255, 255, 0.1);
@@ -73,7 +49,6 @@ body {
   --primary: #0ea5e9;
   --primary-light: #38bdf8;
   --secondary: #06b6d4;
-  --accent: #2dd4bf;
   --text: #ffffff;
   --text-muted: #7dd3fc;
   --border: rgba(56, 189, 248, 0.2);
@@ -86,7 +61,6 @@ body {
   --primary: #22c55e;
   --primary-light: #4ade80;
   --secondary: #84cc16;
-  --accent: #a3e635;
   --text: #ffffff;
   --text-muted: #86efac;
   --border: rgba(74, 222, 128, 0.2);
@@ -99,7 +73,6 @@ body {
   --primary: #f97316;
   --primary-light: #fb923c;
   --secondary: #ec4899;
-  --accent: #fbbf24;
   --text: #ffffff;
   --text-muted: #fdba74;
   --border: rgba(251, 146, 60, 0.2);
@@ -112,7 +85,6 @@ body {
   --primary: #3b82f6;
   --primary-light: #60a5fa;
   --secondary: #8b5cf6;
-  --accent: #06b6d4;
   --text: #1e293b;
   --text-muted: #64748b;
   --border: rgba(0, 0, 0, 0.1);
@@ -125,7 +97,6 @@ body {
   --primary: #ec4899;
   --primary-light: #f472b6;
   --secondary: #db2777;
-  --accent: #a855f7;
   --text: #831843;
   --text-muted: #9d174d;
   --border: rgba(236, 72, 153, 0.2);
@@ -138,7 +109,6 @@ body {
   --primary: #10b981;
   --primary-light: #34d399;
   --secondary: #14b8a6;
-  --accent: #06b6d4;
   --text: #064e3b;
   --text-muted: #047857;
   --border: rgba(16, 185, 129, 0.2);
@@ -151,19 +121,12 @@ body {
   --primary: #f97316;
   --primary-light: #fb923c;
   --secondary: #ea580c;
-  --accent: #eab308;
   --text: #7c2d12;
   --text-muted: #9a3412;
   --border: rgba(249, 115, 22, 0.2);
 }
 
-/* GLASSMORPHISM & CARDS */
-.glass {
-  background: var(--surface);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border);
-}
-
+/* CARDS */
 .card {
   background: var(--surface);
   border-radius: 16px;
@@ -173,10 +136,14 @@ body {
 
 .card:hover {
   border-color: var(--primary);
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
 }
 
-/* BUTONLAR */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+}
+
+/* BUTTONS */
 .btn-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   color: white;
@@ -209,71 +176,7 @@ body {
   border-color: var(--primary);
 }
 
-/* TIMER */
-.timer-display {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* ANİMASYONLAR */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px var(--primary); }
-  50% { box-shadow: 0 0 40px var(--primary); }
-}
-
-@keyframes pixel-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-
-@keyframes sparkle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.animate-pixel-bounce {
-  animation: pixel-bounce 0.5s ease-in-out infinite;
-}
-
-.animate-sparkle {
-  animation: sparkle 1.5s ease-in-out infinite;
-}
-
-/* SCROLLBAR */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--surface);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-light);
-}
-
-/* INPUT STİLLERİ */
+/* INPUT */
 .input-modern {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -294,14 +197,60 @@ body {
   color: var(--text-muted);
 }
 
-/* MOBİL UYUMLULUK */
+/* TIMER */
+.timer-display {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ANIMATIONS */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pixel-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pixel-bounce {
+  animation: pixel-bounce 0.5s ease-in-out infinite;
+}
+
+.animate-sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+/* MOBILE */
 @media (max-width: 768px) {
   .timer-display {
     font-size: 2.5rem;
-  }
-  
-  .card {
-    padding: 16px;
   }
   
   .hide-mobile {
@@ -313,18 +262,4 @@ body {
   .hide-desktop {
     display: none;
   }
-}
-
-/* GRADIENT TEXT */
-.gradient-text {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* FOCUS RING */
-.focus-ring:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
 }
