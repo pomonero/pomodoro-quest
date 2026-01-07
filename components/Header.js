@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { auth } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
 import { translations } from '@/lib/translations';
 import { themes, getDarkThemes, getLightThemes } from '@/lib/themes';
@@ -16,7 +16,6 @@ export default function Header() {
   const t = translations[language] || translations.tr;
   const theme = themes[currentTheme] || themes.midnight;
 
-  // Tema tipine göre logo seç
   const logoSrc = theme.type === 'dark' ? '/logo-light.png' : '/logo-dark.png';
 
   useEffect(() => {
@@ -29,23 +28,36 @@ export default function Header() {
   }, []);
 
   const handleLogout = async () => {
+    if (loggingOut) return;
     setLoggingOut(true);
+    setShowUserMenu(false);
+    
     try {
-      await auth.signOut();
-      // Store'u temizle
-      setUser(null);
-      setProfile(null);
-      // LocalStorage temizle
-      localStorage.removeItem('pomonero_user');
-      localStorage.removeItem('pomonero_profile');
-      localStorage.removeItem('pomonero_stats');
-      // Sayfayı yenile
-      window.location.reload();
+      // 1. Supabase oturumunu kapat
+      if (supabase) {
+        await supabase.auth.signOut({ scope: 'global' });
+      }
     } catch (err) {
       console.error('Logout error:', err);
-    } finally {
-      setLoggingOut(false);
     }
+    
+    // 2. Her şeyi temizle ve sayfayı yenile
+    try {
+      // Store temizle
+      setUser(null);
+      setProfile(null);
+      
+      // LocalStorage tamamen temizle
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+    } catch {}
+    
+    // 3. Sayfayı kesinlikle yenile
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
 
   const navItems = [
@@ -60,13 +72,12 @@ export default function Header() {
     <header className="sticky top-0 z-40 glass border-b" style={{ borderColor: 'var(--border)' }}>
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Logo - BÜYÜTÜLDÜ */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
+          {/* Logo - DEVASA */}
+          <div className="flex items-center cursor-pointer flex-shrink-0" onClick={() => setCurrentPage('home')}>
             <img 
               src={logoSrc} 
               alt="Pomonero" 
-              className="h-12 md:h-16 w-auto object-contain"
-              style={{ maxWidth: '200px' }}
+              className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto"
             />
           </div>
 
@@ -76,9 +87,7 @@ export default function Header() {
               <button
                 key={item.id}
                 onClick={() => setCurrentPage(item.id)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                  currentPage === item.id ? 'text-white' : ''
-                }`}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
                 style={{ 
                   background: currentPage === item.id ? 'var(--primary)' : 'transparent',
                   color: currentPage === item.id ? 'white' : 'var(--text)'
@@ -90,11 +99,11 @@ export default function Header() {
           </nav>
 
           {/* Right Side */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Language */}
             <button
               onClick={toggleLanguage}
-              className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all text-sm"
+              className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all text-base sm:text-lg"
               style={{ color: 'var(--text)' }}
             >
               {language === 'tr' ? '🇹🇷' : '🇬🇧'}
@@ -104,7 +113,7 @@ export default function Header() {
             <div className="relative" ref={themeRef}>
               <button
                 onClick={() => setShowThemeMenu(!showThemeMenu)}
-                className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all"
+                className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all text-base sm:text-lg"
               >
                 {theme.pixelArt}
               </button>
@@ -146,9 +155,9 @@ export default function Header() {
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-all"
+                className="flex items-center gap-2 p-1.5 sm:p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-all"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-lg">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-lg sm:text-xl">
                   {profile?.avatar_emoji || '😊'}
                 </div>
               </button>

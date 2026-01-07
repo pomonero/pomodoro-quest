@@ -9,13 +9,12 @@ export default function Timer() {
   const { user, timerSettings, stats, setStats, setCanPlayGame, setShowGame, language } = useStore();
   const t = translations[language] || translations.tr;
 
-  const [mode, setMode] = useState('focus'); // focus, shortBreak, longBreak
+  const [mode, setMode] = useState('focus');
   const [timeLeft, setTimeLeft] = useState(timerSettings?.focusTime * 60 || 25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
   
   const intervalRef = useRef(null);
-  const startTimeRef = useRef(null);
   const endTimeRef = useRef(null);
 
   const getTotalTime = useCallback(() => {
@@ -27,14 +26,12 @@ export default function Timer() {
     }
   }, [mode, timerSettings]);
 
-  // Timer settings değişince güncelle
   useEffect(() => {
     if (!isRunning) {
       setTimeLeft(getTotalTime());
     }
   }, [timerSettings, mode, isRunning, getTotalTime]);
 
-  // Ana timer logic
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = setInterval(() => {
@@ -56,7 +53,6 @@ export default function Timer() {
     };
   }, [isRunning]);
 
-  // Visibility change - sekmeden çıkıp dönünce düzelt
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isRunning && endTimeRef.current) {
@@ -77,8 +73,8 @@ export default function Timer() {
 
   const handleTimerComplete = async () => {
     setIsRunning(false);
+    endTimeRef.current = null;
     
-    // Ses çal
     if (timerSettings?.soundEnabled) {
       try {
         const audio = new Audio('/sounds/complete.mp3');
@@ -92,7 +88,6 @@ export default function Timer() {
       setSessionsCompleted(newSessions);
       setCanPlayGame(true);
 
-      // İstatistikleri güncelle
       if (user) {
         const focusMinutes = timerSettings?.focusTime || 25;
         const newStats = {
@@ -105,7 +100,6 @@ export default function Timer() {
         await db.updateStats(user.id, newStats);
       }
 
-      // Uzun mola mı kısa mola mı?
       if (newSessions % 4 === 0) {
         setMode('longBreak');
         setTimeLeft((timerSettings?.longBreakTime || 30) * 60);
@@ -114,12 +108,10 @@ export default function Timer() {
         setTimeLeft((timerSettings?.shortBreakTime || 5) * 60);
       }
 
-      // Otomatik başlat
       if (timerSettings?.autoStartBreaks) {
         setTimeout(() => startTimer(), 1000);
       }
     } else {
-      // Mola bitti
       setMode('focus');
       setTimeLeft((timerSettings?.focusTime || 25) * 60);
       setCanPlayGame(false);
@@ -132,7 +124,6 @@ export default function Timer() {
 
   const startTimer = () => {
     setIsRunning(true);
-    startTimeRef.current = Date.now();
     endTimeRef.current = Date.now() + (timeLeft * 1000);
   };
 
@@ -144,14 +135,12 @@ export default function Timer() {
   const resetTimer = () => {
     setIsRunning(false);
     setTimeLeft(getTotalTime());
-    startTimeRef.current = null;
     endTimeRef.current = null;
   };
 
   const changeMode = (newMode) => {
     setIsRunning(false);
     setMode(newMode);
-    startTimeRef.current = null;
     endTimeRef.current = null;
     switch (newMode) {
       case 'focus':
@@ -173,16 +162,15 @@ export default function Timer() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Progress hesapla (0-100)
   const progress = ((getTotalTime() - timeLeft) / getTotalTime()) * 100;
-  const circumference = 2 * Math.PI * 140;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   const getModeColor = () => {
     switch (mode) {
-      case 'focus': return 'var(--primary)';
+      case 'focus': return '#6366f1';
       case 'shortBreak': return '#22c55e';
       case 'longBreak': return '#f59e0b';
-      default: return 'var(--primary)';
+      default: return '#6366f1';
     }
   };
 
@@ -193,6 +181,38 @@ export default function Timer() {
       case 'longBreak': return '🌴';
       default: return '🎯';
     }
+  };
+
+  // SVG Arc hesaplama - yuvarlatılmış uçlar için
+  const size = 280;
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const center = size / 2;
+  
+  // Arc path oluştur
+  const createArcPath = (percentage) => {
+    if (percentage === 0) return '';
+    if (percentage >= 100) {
+      // Tam daire
+      return `M ${center} ${strokeWidth / 2}
+              A ${radius} ${radius} 0 1 1 ${center - 0.01} ${strokeWidth / 2}`;
+    }
+    
+    const angle = (percentage / 100) * 360;
+    const startAngle = -90; // Saat 12'den başla
+    const endAngle = startAngle + angle;
+    
+    const startRad = (startAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+    
+    const x1 = center + radius * Math.cos(startRad);
+    const y1 = center + radius * Math.sin(startRad);
+    const x2 = center + radius * Math.cos(endRad);
+    const y2 = center + radius * Math.sin(endRad);
+    
+    const largeArc = angle > 180 ? 1 : 0;
+    
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`;
   };
 
   return (
@@ -207,9 +227,7 @@ export default function Timer() {
           <button
             key={m.id}
             onClick={() => changeMode(m.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              mode === m.id ? 'text-white' : ''
-            }`}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
             style={{
               background: mode === m.id ? getModeColor() : 'var(--surface)',
               color: mode === m.id ? 'white' : 'var(--text-muted)',
@@ -221,41 +239,42 @@ export default function Timer() {
         ))}
       </div>
 
-      {/* Timer Circle */}
-      <div className="relative w-72 h-72 mx-auto mb-6">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 300 300">
+      {/* Timer Circle - SVG Arc */}
+      <div className="relative mx-auto mb-6" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="transform">
           {/* Background circle */}
           <circle
-            cx="150"
-            cy="150"
-            r="140"
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
             stroke="var(--surface)"
-            strokeWidth="12"
-            fill="none"
+            strokeWidth={strokeWidth}
           />
-          {/* Progress circle - YUVARLATILMIŞ */}
-          <circle
-            cx="150"
-            cy="150"
-            r="140"
-            stroke={getModeColor()}
-            strokeWidth="12"
-            fill="none"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-300"
-            style={{ filter: `drop-shadow(0 0 10px ${getModeColor()})` }}
-          />
+          
+          {/* Progress arc - yuvarlatılmış uçlar */}
+          {progress > 0 && (
+            <path
+              d={createArcPath(progress)}
+              fill="none"
+              stroke={getModeColor()}
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              style={{
+                filter: `drop-shadow(0 0 8px ${getModeColor()})`,
+                transition: 'all 0.3s ease'
+              }}
+            />
+          )}
         </svg>
         
         {/* Center Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl mb-2">{getModeIcon()}</span>
+          <span className="text-4xl mb-2">{getModeIcon()}</span>
           <span className="text-5xl font-bold font-mono" style={{ color: 'var(--text)' }}>
             {formatTime(timeLeft)}
           </span>
-          <span className="text-sm mt-2" style={{ color: getModeColor() }}>
+          <span className="text-sm mt-2 font-medium" style={{ color: getModeColor() }}>
             {mode === 'focus' ? t.focus : mode === 'shortBreak' ? t.shortBreak : t.longBreak}
           </span>
         </div>
@@ -277,7 +296,7 @@ export default function Timer() {
       <div className="flex justify-center gap-3">
         <button
           onClick={isRunning ? pauseTimer : startTimer}
-          className="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white transition-all hover:scale-105"
+          className="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white transition-all hover:scale-105 hover:shadow-lg"
           style={{ background: getModeColor() }}
         >
           {isRunning ? (
