@@ -3,7 +3,7 @@
 import { useStore } from '@/lib/store';
 
 export default function AdSpace({ size = 'square' }) {
-  const { darkMode } = useStore();
+  const { language } = useStore();
 
   const sizes = {
     square: { width: '100%', height: '250px', label: '300x250' },
@@ -16,22 +16,20 @@ export default function AdSpace({ size = 'square' }) {
 
   return (
     <div
-      className={`rounded-2xl flex flex-col items-center justify-center ${
-        darkMode 
-          ? 'bg-white/5 border border-white/10 border-dashed' 
-          : 'bg-gray-100 border border-gray-200 border-dashed'
-      }`}
+      className="rounded-2xl flex flex-col items-center justify-center card border-dashed"
       style={{
         width: currentSize.width,
         height: currentSize.height,
         minHeight: currentSize.height,
+        borderColor: 'var(--border)',
+        background: 'var(--surface)',
       }}
     >
-      <span className={`text-2xl mb-2 ${darkMode ? 'opacity-30' : 'opacity-40'}`}>📢</span>
-      <span className={`text-xs font-medium ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>
-        Reklam Alanı
+      <span className="text-2xl mb-2 opacity-30">📢</span>
+      <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+        {language === 'tr' ? 'Reklam Alanı' : 'Ad Space'}
       </span>
-      <span className={`text-xs ${darkMode ? 'text-gray-700' : 'text-gray-300'}`}>
+      <span className="text-xs opacity-50" style={{ color: 'var(--text-muted)' }}>
         {currentSize.label}
       </span>
     </div>

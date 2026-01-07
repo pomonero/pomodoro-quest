@@ -1,129 +1,163 @@
 'use client';
 
 import { useStore } from '@/lib/store';
+import { translations } from '@/lib/translations';
 
 export default function Stats() {
-  const { darkMode, stats, profile } = useStore();
+  const { language, stats, settings } = useStore();
+  const t = translations[language] || translations.tr;
+
+  const { totalSessions, todaySessions, totalFocusMinutes, bestScore } = stats;
+  const dailyGoal = settings.dailyGoal || 8;
+
+  // Level hesaplama
+  const getLevel = () => {
+    if (totalSessions < 10) return 1;
+    if (totalSessions < 25) return 2;
+    if (totalSessions < 50) return 3;
+    if (totalSessions < 100) return 4;
+    if (totalSessions < 200) return 5;
+    if (totalSessions < 500) return 6;
+    if (totalSessions < 1000) return 7;
+    return Math.floor(totalSessions / 500) + 5;
+  };
+
+  const getLevelTitle = () => {
+    const level = getLevel();
+    const titles = language === 'tr' 
+      ? ['Çaylak', 'Öğrenci', 'Çalışkan', 'Uzman', 'Usta', 'Efsane', 'Titan', 'Tanrı']
+      : ['Rookie', 'Student', 'Worker', 'Expert', 'Master', 'Legend', 'Titan', 'God'];
+    return titles[Math.min(level - 1, titles.length - 1)];
+  };
+
+  const getNextLevelSessions = () => {
+    const thresholds = [10, 25, 50, 100, 200, 500, 1000];
+    for (const threshold of thresholds) {
+      if (totalSessions < threshold) return threshold;
+    }
+    return Math.ceil(totalSessions / 500) * 500 + 500;
+  };
+
+  const level = getLevel();
+  const nextLevel = getNextLevelSessions();
+  const progressToNext = ((totalSessions % (nextLevel - (level === 1 ? 0 : getNextLevelSessions() - nextLevel))) / (nextLevel - totalSessions + (totalSessions % 100))) * 100;
+
+  const goalProgress = Math.min((todaySessions / dailyGoal) * 100, 100);
 
   const statItems = [
-    { 
-      icon: '🍅', 
-      label: 'Bugün', 
-      value: stats.todayPomodoros,
-      color: 'from-red-500 to-orange-500',
-      goal: profile?.study_goal || 8
+    {
+      icon: '🎯',
+      label: t.today,
+      value: todaySessions,
+      suffix: '',
+      color: 'from-indigo-500 to-purple-600'
     },
-    { 
-      icon: '🔥', 
-      label: 'Toplam', 
-      value: stats.totalPomodoros,
-      color: 'from-orange-500 to-yellow-500'
+    {
+      icon: '📊',
+      label: t.total,
+      value: totalSessions,
+      suffix: '',
+      color: 'from-green-500 to-emerald-600'
     },
-    { 
-      icon: '⏱️', 
-      label: 'Saat', 
-      value: Math.floor(stats.totalFocusMinutes / 60),
-      color: 'from-blue-500 to-cyan-500'
+    {
+      icon: '⏱️',
+      label: t.hours,
+      value: Math.floor(totalFocusMinutes / 60),
+      suffix: 'h',
+      color: 'from-blue-500 to-cyan-600'
     },
-    { 
-      icon: '🎮', 
-      label: 'En İyi', 
-      value: stats.bestScore,
-      color: 'from-purple-500 to-pink-500'
-    },
+    {
+      icon: '🏆',
+      label: t.bestScore,
+      value: bestScore,
+      suffix: '',
+      color: 'from-yellow-500 to-orange-500'
+    }
   ];
 
-  // Level calculation
-  const level = Math.floor(stats.totalPomodoros / 10) + 1;
-  const levelProgress = (stats.totalPomodoros % 10) * 10;
-  const pomodorosToNextLevel = 10 - (stats.totalPomodoros % 10);
-
-  // Today's goal progress
-  const todayGoal = profile?.study_goal || 8;
-  const todayProgress = Math.min((stats.todayPomodoros / todayGoal) * 100, 100);
-
   return (
-    <div className={`card p-6 ${darkMode ? '' : 'card-light'}`}>
+    <div className="card p-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center">
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+          <span className="text-lg">📈</span>
         </div>
         <div>
-          <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            İstatistikler
+          <h3 className="font-semibold" style={{ color: 'var(--text)' }}>
+            {t.statistics}
           </h3>
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Seviye {level}
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            {t.level} {level} • {getLevelTitle()}
           </p>
         </div>
       </div>
 
-      {/* Today's Goal */}
-      <div className={`mb-6 p-4 rounded-xl ${darkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
+      {/* Level Progress */}
+      <div className="mb-6 p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
         <div className="flex items-center justify-between mb-2">
-          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Bugünkü Hedef
-          </span>
-          <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {stats.todayPomodoros}/{todayGoal}
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">⭐</span>
+            <span className="font-bold" style={{ color: 'var(--text)' }}>
+              {t.level} {level}
+            </span>
+          </div>
+          <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            {totalSessions}/{nextLevel}
           </span>
         </div>
-        <div className={`h-2 rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-gray-200'}`}>
-          <div 
-            className="h-full bg-gradient-to-r from-accent to-accent-light transition-all duration-500"
-            style={{ width: `${todayProgress}%` }}
+        <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] transition-all duration-500"
+            style={{ width: `${(totalSessions / nextLevel) * 100}%` }}
           />
         </div>
-        {todayProgress >= 100 && (
-          <p className="text-accent text-xs mt-2 flex items-center gap-1">
-            <span>🎉</span> Günlük hedefe ulaştın!
+        <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+          {t.toNextLevel}: {nextLevel - totalSessions} {t.sessions}
+        </p>
+      </div>
+
+      {/* Daily Goal */}
+      <div className="mb-6 p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-medium" style={{ color: 'var(--text)' }}>
+            {t.dailyGoal}
+          </span>
+          <span className="text-sm font-bold" style={{ color: goalProgress >= 100 ? '#22c55e' : 'var(--primary)' }}>
+            {todaySessions}/{dailyGoal}
+          </span>
+        </div>
+        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              goalProgress >= 100 ? 'bg-green-500' : 'bg-[var(--primary)]'
+            }`}
+            style={{ width: `${goalProgress}%` }}
+          />
+        </div>
+        {goalProgress >= 100 && (
+          <p className="text-xs mt-2 text-green-400 flex items-center gap-1">
+            <span>✓</span> {t.goalReached}
           </p>
         )}
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3">
         {statItems.map((item, index) => (
-          <div 
+          <div
             key={index}
-            className={`stat-card text-center ${darkMode ? '' : 'bg-gray-50 border-gray-200'}`}
+            className="p-4 rounded-xl text-center"
+            style={{ background: 'var(--surface)' }}
           >
-            <div className="text-2xl mb-1">{item.icon}</div>
-            <div className={`text-xl font-bold font-display ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              {item.value.toLocaleString()}
-            </div>
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            <span className="text-2xl mb-1 block">{item.icon}</span>
+            <p className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
+              {item.value.toLocaleString()}{item.suffix}
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
               {item.label}
-            </div>
+            </p>
           </div>
         ))}
-      </div>
-
-      {/* Level Progress */}
-      <div className={`p-4 rounded-xl ${darkMode ? 'bg-gradient-to-r from-primary/10 to-secondary/10' : 'bg-gradient-to-r from-primary/5 to-secondary/5'}`}>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">⭐</span>
-            <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              Seviye {level}
-            </span>
-          </div>
-          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            {levelProgress}%
-          </span>
-        </div>
-        <div className={`h-2 rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-gray-200'}`}>
-          <div 
-            className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
-            style={{ width: `${levelProgress}%` }}
-          />
-        </div>
-        <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          Seviye {level + 1} için {pomodorosToNextLevel} pomodoro daha
-        </p>
       </div>
     </div>
   );

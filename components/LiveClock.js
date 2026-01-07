@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 
 export default function LiveClock() {
-  const { darkMode } = useStore();
+  const { language } = useStore();
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -15,44 +15,41 @@ export default function LiveClock() {
     return () => clearInterval(timer);
   }, []);
 
-  const formatDate = (date) => {
-    const options = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return date.toLocaleDateString('tr-TR', options);
-  };
-
-  const formatTime = (date) => {
-    return date.toLocaleTimeString('tr-TR', {
+  const formatTime = () => {
+    return time.toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
+      hour12: false
+    });
+  };
+
+  const formatDate = () => {
+    return time.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
     });
   };
 
   return (
-    <div className={`card p-4 ${darkMode ? '' : 'card-light'}`}>
+    <div className="card p-4">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary to-secondary-light flex items-center justify-center">
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
+          <span className="text-lg">🕐</span>
         </div>
-        <div>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            Şu An
-          </p>
-          <p className={`text-2xl font-display font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            {formatTime(time)}
-          </p>
-        </div>
+        <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+          {language === 'tr' ? 'Şu an' : 'Current Time'}
+        </span>
       </div>
-      
-      <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-        📅 {formatDate(time)}
+
+      <div className="text-center">
+        <p className="timer-display text-3xl font-bold mb-1" style={{ color: 'var(--text)' }}>
+          {formatTime()}
+        </p>
+        <p className="text-sm capitalize" style={{ color: 'var(--text-muted)' }}>
+          {formatDate()}
+        </p>
       </div>
     </div>
   );
