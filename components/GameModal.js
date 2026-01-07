@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
 
-// 5 Farklı Oyun Componenti
 const games = {
   runner: RunnerGame,
   jumper: JumperGame,
@@ -14,11 +13,11 @@ const games = {
 };
 
 const gameInfo = {
-  runner: { name: 'KOŞUCU', icon: '🏃', description: 'Engellere çarpmadan koş!', controls: '↑ ZIPLA' },
-  jumper: { name: 'ZIPLAYICI', icon: '🐸', description: 'Platformlara zıpla!', controls: '← → HAREKET, ↑ ZIPLA' },
-  collector: { name: 'TOPLAYICI', icon: '⭐', description: 'Düşen yıldızları topla!', controls: '← → HAREKET' },
-  dodger: { name: 'KAÇIŞ', icon: '💨', description: 'Kırmızı bloklardan kaç!', controls: '↑ ↓ ← → HAREKET' },
-  climber: { name: 'TIRMANICI', icon: '🧗', description: 'En yükseğe tırman!', controls: '← → HAREKET, ↑ ZIPLA' }
+  runner: { name: 'Koşucu', icon: '🏃', description: 'Engellere çarpmadan koş!', controls: '↑ veya SPACE ile zıpla' },
+  jumper: { name: 'Zıplayıcı', icon: '🐸', description: 'Platformlara zıpla!', controls: '← → hareket, ↑ zıpla' },
+  collector: { name: 'Toplayıcı', icon: '⭐', description: 'Yıldızları topla, bombaları atla!', controls: '← → hareket' },
+  dodger: { name: 'Kaçış', icon: '💨', description: 'Kırmızı bloklardan kaç!', controls: '↑ ↓ ← → hareket' },
+  climber: { name: 'Tırmanıcı', icon: '🧗', description: 'En yükseğe tırman!', controls: '← → hareket, ↑ zıpla' }
 };
 
 export default function GameModal() {
@@ -34,7 +33,6 @@ export default function GameModal() {
   const [finalScore, setFinalScore] = useState(0);
   const [scoreSaved, setScoreSaved] = useState(false);
 
-  // Rastgele oyun seç (her pomodoro bitişinde)
   useEffect(() => {
     if (showGame && !selectedGame) {
       const gameKeys = Object.keys(games);
@@ -48,12 +46,10 @@ export default function GameModal() {
     setFinalScore(score);
     setGameScore(score);
 
-    // Skoru kaydet
     if (user && score > 0 && !scoreSaved) {
       await db.saveGameScore(user.id, selectedGame, score);
       setScoreSaved(true);
       
-      // Best score güncelle
       if (score > stats.bestScore) {
         setStats({ ...stats, bestScore: score });
       }
@@ -69,138 +65,96 @@ export default function GameModal() {
     setCanPlayGame(false);
   };
 
-  const handlePlayAgain = () => {
-    setIsPlaying(true);
-    setFinalScore(0);
-    setScoreSaved(false);
-  };
-
   if (!showGame) return null;
-
-  const theme = darkMode ? {
-    overlay: 'bg-black/90',
-    surface: 'bg-gray-900',
-    text: 'text-gray-100',
-    textMuted: 'text-gray-400',
-    border: 'border-cyan-500/30',
-    neonPrimary: 'text-cyan-400',
-    neonSecondary: 'text-fuchsia-400',
-    neonAccent: 'text-lime-400',
-    button: 'bg-cyan-500 hover:bg-cyan-400 text-gray-950',
-    buttonSecondary: 'bg-gray-800 hover:bg-gray-700 text-gray-300',
-    gameBg: 'bg-gray-800',
-  } : {
-    overlay: 'bg-black/70',
-    surface: 'bg-white',
-    text: 'text-gray-900',
-    textMuted: 'text-gray-600',
-    border: 'border-fuchsia-400/30',
-    neonPrimary: 'text-fuchsia-600',
-    neonSecondary: 'text-cyan-600',
-    neonAccent: 'text-emerald-600',
-    button: 'bg-fuchsia-500 hover:bg-fuchsia-400 text-white',
-    buttonSecondary: 'bg-slate-200 hover:bg-slate-300 text-gray-700',
-    gameBg: 'bg-slate-100',
-  };
 
   const GameComponent = selectedGame ? games[selectedGame] : null;
   const info = selectedGame ? gameInfo[selectedGame] : null;
 
   return (
-    <div className={`fixed inset-0 ${theme.overlay} flex items-center justify-center z-50 p-4`}>
-      <div className={`${theme.surface} ${theme.border} border-4 p-6 max-w-2xl w-full shadow-neon-cyan`}>
-        {/* Header */}
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className={`w-full max-w-2xl rounded-2xl p-6 ${darkMode ? 'bg-surface-dark border border-white/10' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{info?.icon}</span>
             <div>
-              <h2 className={`font-pixel text-sm ${theme.neonAccent}`}>
-                🎮 ÖDÜL OYUNU!
+              <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                🎮 Ödül Oyunu!
               </h2>
-              <p className={`font-pixel text-xs ${theme.textMuted}`}>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 {info?.name}
               </p>
             </div>
           </div>
-          <div className={`font-pixel text-lg ${theme.neonPrimary}`}>
-            SKOR: {isPlaying ? '...' : finalScore}
+          <div className={`text-xl font-display font-bold ${darkMode ? 'text-primary' : 'text-primary-dark'}`}>
+            {isPlaying ? '...' : finalScore} puan
           </div>
         </div>
 
-        {/* Game Area */}
-        <div className={`${theme.gameBg} ${theme.border} border-2 relative overflow-hidden`}
-          style={{ height: '300px' }}>
-          
+        <div className={`rounded-xl overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`} style={{ height: '320px' }}>
           {!isPlaying && !finalScore && (
-            // Start Screen
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-5xl mb-4 animate-bounce">{info?.icon}</span>
-              <p className={`font-pixel text-sm ${theme.neonPrimary} mb-2`}>
+            <div className="h-full flex flex-col items-center justify-center">
+              <span className="text-6xl mb-4 animate-bounce">{info?.icon}</span>
+              <p className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 {info?.name}
               </p>
-              <p className={`font-pixel text-xs ${theme.textMuted} mb-4`}>
+              <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 {info?.description}
               </p>
-              <p className={`font-pixel text-xs ${theme.neonSecondary}`}>
+              <p className={`text-xs px-4 py-2 rounded-lg ${darkMode ? 'bg-white/10 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>
                 {info?.controls}
               </p>
             </div>
           )}
 
           {isPlaying && GameComponent && (
-            <GameComponent 
-              darkMode={darkMode}
-              onGameEnd={handleGameEnd}
-            />
+            <GameComponent darkMode={darkMode} onGameEnd={handleGameEnd} />
           )}
 
           {!isPlaying && finalScore > 0 && (
-            // Game Over Screen
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
-              <p className={`font-pixel text-xl ${theme.neonPrimary} mb-2`}>
-                OYUN BİTTİ!
+            <div className="h-full flex flex-col items-center justify-center bg-black/50">
+              <p className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Oyun Bitti!
               </p>
-              <p className={`font-pixel text-3xl ${theme.neonAccent} mb-4`}>
-                {finalScore} PUAN
+              <p className="text-4xl font-display font-bold text-primary mb-4">
+                {finalScore} puan
               </p>
               {scoreSaved && (
-                <p className={`font-pixel text-xs ${theme.neonSecondary}`}>
-                  ✓ Skor kaydedildi!
+                <p className="text-accent text-sm flex items-center gap-2">
+                  <span>✓</span> Skor kaydedildi!
                 </p>
               )}
             </div>
           )}
         </div>
 
-        {/* Controls */}
         <div className="flex gap-3 mt-4">
           {!isPlaying ? (
             <>
               <button
-                onClick={() => setIsPlaying(true)}
+                onClick={() => { setIsPlaying(true); setFinalScore(0); setScoreSaved(false); }}
                 disabled={!canPlayGame && finalScore > 0}
-                className={`flex-1 py-3 font-pixel text-xs ${theme.button} transition-all
-                  ${!canPlayGame && finalScore > 0 ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+                className={`flex-1 btn-primary py-3 ${!canPlayGame && finalScore > 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                {finalScore > 0 ? '↺ TEKRAR OYNA' : '▶ OYUNA BAŞLA'}
+                {finalScore > 0 ? '↺ Tekrar Oyna' : '▶ Oyuna Başla'}
               </button>
               <button
                 onClick={handleClose}
-                className={`flex-1 py-3 font-pixel text-xs ${theme.buttonSecondary} ${theme.border} border-2`}
+                className={`flex-1 py-3 rounded-xl font-medium ${
+                  darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
-                ✕ KAPAT
+                ✕ Kapat
               </button>
             </>
           ) : (
-            <p className={`w-full text-center font-pixel text-xs ${theme.textMuted}`}>
+            <p className={`w-full text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               {info?.controls} • ESC ile çık
             </p>
           )}
         </div>
 
-        {/* Warning */}
         {!canPlayGame && finalScore > 0 && (
-          <p className={`font-pixel text-xs ${theme.neonSecondary} text-center mt-4`}>
+          <p className="text-secondary text-sm text-center mt-4">
             ⚠ Tekrar oynamak için bir pomodoro daha tamamla!
           </p>
         )}
@@ -210,7 +164,7 @@ export default function GameModal() {
 }
 
 // ============================================
-// OYUN 1: RUNNER - Engellere atlayarak koş
+// OYUN 1: RUNNER - Daha yavaş başlangıç
 // ============================================
 function RunnerGame({ darkMode, onGameEnd }) {
   const canvasRef = useRef(null);
@@ -221,24 +175,22 @@ function RunnerGame({ darkMode, onGameEnd }) {
     isJumping: false,
     obstacles: [],
     gameOver: false,
-    speed: 5
+    speed: 3, // Daha yavaş başlangıç
+    frameCount: 0
   });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     let animationId;
-
     const state = gameState.current;
 
     const handleKeyDown = (e) => {
-      if (e.key === 'ArrowUp' && !state.isJumping) {
-        state.velocity = -12;
+      if ((e.key === 'ArrowUp' || e.key === ' ') && !state.isJumping) {
+        state.velocity = -10;
         state.isJumping = true;
       }
-      if (e.key === 'Escape') {
-        state.gameOver = true;
-      }
+      if (e.key === 'Escape') state.gameOver = true;
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -249,15 +201,17 @@ function RunnerGame({ darkMode, onGameEnd }) {
         return;
       }
 
-      ctx.fillStyle = darkMode ? '#1a1a2e' : '#e2e8f0';
+      state.frameCount++;
+
+      ctx.fillStyle = darkMode ? '#1f2937' : '#f3f4f6';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Ground
-      ctx.fillStyle = darkMode ? '#374151' : '#94a3b8';
+      ctx.fillStyle = darkMode ? '#374151' : '#d1d5db';
       ctx.fillRect(0, 260, canvas.width, 40);
 
-      // Player
-      state.velocity += 0.5; // Gravity
+      // Player physics
+      state.velocity += 0.5;
       state.playerY += state.velocity;
 
       if (state.playerY >= 220) {
@@ -266,35 +220,37 @@ function RunnerGame({ darkMode, onGameEnd }) {
         state.isJumping = false;
       }
 
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowColor = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowBlur = 10;
+      // Draw player
+      ctx.fillStyle = '#6366f1';
+      ctx.shadowColor = '#6366f1';
+      ctx.shadowBlur = 15;
       ctx.fillRect(50, state.playerY, 30, 40);
       ctx.shadowBlur = 0;
 
-      // Obstacles
-      if (Math.random() < 0.02) {
+      // Spawn obstacles - daha seyrek
+      if (state.frameCount % 90 === 0 && Math.random() < 0.7) {
         state.obstacles.push({
           x: canvas.width,
-          width: 20 + Math.random() * 20,
-          height: 30 + Math.random() * 30
+          width: 20 + Math.random() * 15,
+          height: 25 + Math.random() * 25
         });
       }
 
+      // Update obstacles
       state.obstacles = state.obstacles.filter(obs => {
         obs.x -= state.speed;
 
         ctx.fillStyle = '#ef4444';
         ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 5;
+        ctx.shadowBlur = 8;
         ctx.fillRect(obs.x, 260 - obs.height, obs.width, obs.height);
         ctx.shadowBlur = 0;
 
-        // Collision
+        // Collision - biraz daha hoşgörülü
         if (
-          50 < obs.x + obs.width &&
-          50 + 30 > obs.x &&
-          state.playerY + 40 > 260 - obs.height
+          55 < obs.x + obs.width &&
+          50 + 25 > obs.x &&
+          state.playerY + 35 > 260 - obs.height
         ) {
           state.gameOver = true;
         }
@@ -302,14 +258,17 @@ function RunnerGame({ darkMode, onGameEnd }) {
         return obs.x > -50;
       });
 
-      // Score
+      // Score & difficulty increase
       setScore(s => s + 1);
-      state.speed = 5 + Math.floor(score / 500) * 0.5;
+      
+      // Zorluk artışı daha yavaş
+      if (state.frameCount % 500 === 0 && state.speed < 8) {
+        state.speed += 0.3;
+      }
 
-      // Score display
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.font = '16px "Press Start 2P"';
-      ctx.fillText(`SKOR: ${score}`, 10, 30);
+      ctx.fillStyle = darkMode ? '#fff' : '#1f2937';
+      ctx.font = 'bold 18px Inter';
+      ctx.fillText(`Skor: ${score}`, 15, 30);
 
       animationId = requestAnimationFrame(gameLoop);
     };
@@ -320,13 +279,13 @@ function RunnerGame({ darkMode, onGameEnd }) {
       window.removeEventListener('keydown', handleKeyDown);
       cancelAnimationFrame(animationId);
     };
-  }, [score]);
+  }, [score, darkMode, onGameEnd]);
 
   return <canvas ref={canvasRef} width={600} height={300} className="w-full h-full" />;
 }
 
 // ============================================
-// OYUN 2: JUMPER - Platform zıplama
+// OYUN 2: JUMPER - Daha kolay
 // ============================================
 function JumperGame({ darkMode, onGameEnd }) {
   const canvasRef = useRef(null);
@@ -335,12 +294,7 @@ function JumperGame({ darkMode, onGameEnd }) {
     playerX: 280,
     playerY: 250,
     velocityY: 0,
-    platforms: [
-      { x: 250, y: 280, width: 100 },
-      { x: 100, y: 200, width: 80 },
-      { x: 350, y: 140, width: 80 },
-      { x: 200, y: 80, width: 80 },
-    ],
+    platforms: [],
     gameOver: false,
     cameraY: 0,
     keys: {}
@@ -352,13 +306,20 @@ function JumperGame({ darkMode, onGameEnd }) {
     let animationId;
     const state = gameState.current;
 
+    // Initialize platforms - daha geniş ve sık
+    for (let i = 0; i < 12; i++) {
+      state.platforms.push({
+        x: Math.random() * (canvas.width - 100),
+        y: 280 - i * 50,
+        width: 80 + Math.random() * 40
+      });
+    }
+
     const handleKeyDown = (e) => {
       state.keys[e.key] = true;
       if (e.key === 'Escape') state.gameOver = true;
     };
-    const handleKeyUp = (e) => {
-      state.keys[e.key] = false;
-    };
+    const handleKeyUp = (e) => state.keys[e.key] = false;
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -369,19 +330,15 @@ function JumperGame({ darkMode, onGameEnd }) {
         return;
       }
 
-      ctx.fillStyle = darkMode ? '#1a1a2e' : '#e2e8f0';
+      ctx.fillStyle = darkMode ? '#1f2937' : '#f3f4f6';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Movement
       if (state.keys['ArrowLeft']) state.playerX -= 5;
       if (state.keys['ArrowRight']) state.playerX += 5;
-      if (state.keys['ArrowUp'] && state.velocityY === 0) state.velocityY = -15;
 
-      // Physics
-      state.velocityY += 0.6;
+      state.velocityY += 0.4; // Daha az yerçekimi
       state.playerY += state.velocityY;
 
-      // Wrap around
       if (state.playerX < -20) state.playerX = canvas.width;
       if (state.playerX > canvas.width) state.playerX = -20;
 
@@ -390,60 +347,54 @@ function JumperGame({ darkMode, onGameEnd }) {
         const platY = plat.y - state.cameraY;
         if (
           state.velocityY > 0 &&
-          state.playerX + 20 > plat.x &&
-          state.playerX < plat.x + plat.width &&
+          state.playerX + 25 > plat.x &&
+          state.playerX + 5 < plat.x + plat.width &&
           state.playerY + 30 > platY &&
-          state.playerY + 30 < platY + 20
+          state.playerY + 30 < platY + 15
         ) {
-          state.velocityY = -15;
+          state.velocityY = -11; // Daha düşük zıplama
           setScore(s => s + 10);
         }
       });
 
-      // Camera follows player up
-      if (state.playerY < 150) {
-        state.cameraY -= (150 - state.playerY);
-        state.playerY = 150;
+      if (state.playerY < 120) {
+        state.cameraY -= (120 - state.playerY);
+        state.playerY = 120;
       }
 
       // Generate new platforms
-      while (state.platforms[state.platforms.length - 1].y - state.cameraY > -50) {
+      while (state.platforms[state.platforms.length - 1].y - state.cameraY > -30) {
         const lastPlat = state.platforms[state.platforms.length - 1];
         state.platforms.push({
-          x: Math.random() * (canvas.width - 80),
-          y: lastPlat.y - 60 - Math.random() * 40,
-          width: 60 + Math.random() * 40
+          x: Math.random() * (canvas.width - 100),
+          y: lastPlat.y - 45 - Math.random() * 25, // Daha sık platformlar
+          width: 70 + Math.random() * 50
         });
       }
 
-      // Remove old platforms
       state.platforms = state.platforms.filter(p => p.y - state.cameraY < canvas.height + 50);
 
-      // Fall death
-      if (state.playerY > canvas.height) {
-        state.gameOver = true;
-      }
+      if (state.playerY > canvas.height) state.gameOver = true;
 
       // Draw platforms
       state.platforms.forEach(plat => {
-        ctx.fillStyle = darkMode ? '#84cc16' : '#22c55e';
-        ctx.shadowColor = darkMode ? '#84cc16' : '#22c55e';
-        ctx.shadowBlur = 5;
-        ctx.fillRect(plat.x, plat.y - state.cameraY, plat.width, 15);
+        ctx.fillStyle = '#10b981';
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = 8;
+        ctx.fillRect(plat.x, plat.y - state.cameraY, plat.width, 12);
         ctx.shadowBlur = 0;
       });
 
       // Draw player
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowColor = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#6366f1';
+      ctx.shadowColor = '#6366f1';
+      ctx.shadowBlur = 15;
       ctx.fillRect(state.playerX, state.playerY, 30, 30);
       ctx.shadowBlur = 0;
 
-      // Score
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.font = '16px "Press Start 2P"';
-      ctx.fillText(`SKOR: ${score}`, 10, 30);
+      ctx.fillStyle = darkMode ? '#fff' : '#1f2937';
+      ctx.font = 'bold 18px Inter';
+      ctx.fillText(`Skor: ${score}`, 15, 30);
 
       animationId = requestAnimationFrame(gameLoop);
     };
@@ -455,24 +406,24 @@ function JumperGame({ darkMode, onGameEnd }) {
       window.removeEventListener('keyup', handleKeyUp);
       cancelAnimationFrame(animationId);
     };
-  }, [score]);
+  }, [score, darkMode, onGameEnd]);
 
   return <canvas ref={canvasRef} width={600} height={300} className="w-full h-full" />;
 }
 
 // ============================================
-// OYUN 3: COLLECTOR - Düşen yıldızları topla
+// OYUN 3: COLLECTOR - Daha kolay
 // ============================================
 function CollectorGame({ darkMode, onGameEnd }) {
   const canvasRef = useRef(null);
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3);
+  const [lives, setLives] = useState(5); // Daha fazla can
   const gameState = useRef({
     playerX: 280,
     items: [],
     gameOver: false,
     keys: {},
-    spawnRate: 0.03
+    frameCount: 0
   });
 
   useEffect(() => {
@@ -485,9 +436,7 @@ function CollectorGame({ darkMode, onGameEnd }) {
       state.keys[e.key] = true;
       if (e.key === 'Escape') state.gameOver = true;
     };
-    const handleKeyUp = (e) => {
-      state.keys[e.key] = false;
-    };
+    const handleKeyUp = (e) => state.keys[e.key] = false;
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -498,30 +447,29 @@ function CollectorGame({ darkMode, onGameEnd }) {
         return;
       }
 
-      ctx.fillStyle = darkMode ? '#1a1a2e' : '#e2e8f0';
+      state.frameCount++;
+
+      ctx.fillStyle = darkMode ? '#1f2937' : '#f3f4f6';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Movement
-      if (state.keys['ArrowLeft']) state.playerX -= 8;
-      if (state.keys['ArrowRight']) state.playerX += 8;
+      if (state.keys['ArrowLeft']) state.playerX -= 7;
+      if (state.keys['ArrowRight']) state.playerX += 7;
       state.playerX = Math.max(0, Math.min(canvas.width - 50, state.playerX));
 
-      // Spawn items
-      if (Math.random() < state.spawnRate) {
-        const isStar = Math.random() > 0.2;
+      // Spawn items - daha seyrek
+      if (state.frameCount % 45 === 0) {
+        const isStar = Math.random() > 0.15; // %85 yıldız
         state.items.push({
           x: Math.random() * (canvas.width - 20),
           y: -20,
           type: isStar ? 'star' : 'bomb',
-          speed: 3 + Math.random() * 2
+          speed: 2 + Math.random() * 1.5 // Daha yavaş
         });
       }
 
-      // Update items
       state.items = state.items.filter(item => {
         item.y += item.speed;
 
-        // Draw
         if (item.type === 'star') {
           ctx.fillStyle = '#fbbf24';
           ctx.shadowColor = '#fbbf24';
@@ -529,31 +477,30 @@ function CollectorGame({ darkMode, onGameEnd }) {
           ctx.fillStyle = '#ef4444';
           ctx.shadowColor = '#ef4444';
         }
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 10;
         ctx.beginPath();
-        ctx.arc(item.x + 10, item.y + 10, 10, 0, Math.PI * 2);
+        ctx.arc(item.x + 12, item.y + 12, 12, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // Collision with player
+        // Collision
         if (
           item.x < state.playerX + 50 &&
-          item.x + 20 > state.playerX &&
-          item.y + 20 > 250 &&
+          item.x + 24 > state.playerX &&
+          item.y + 24 > 250 &&
           item.y < 280
         ) {
           if (item.type === 'star') {
-            setScore(s => s + 10);
+            setScore(s => s + 15);
           } else {
             setLives(l => l - 1);
           }
           return false;
         }
 
-        // Missed star
         if (item.y > canvas.height) {
           if (item.type === 'star') {
-            setLives(l => l - 1);
+            // Yıldız kaçtığında can kaybetme
           }
           return false;
         }
@@ -562,19 +509,16 @@ function CollectorGame({ darkMode, onGameEnd }) {
       });
 
       // Draw player
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowColor = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#6366f1';
+      ctx.shadowColor = '#6366f1';
+      ctx.shadowBlur = 15;
       ctx.fillRect(state.playerX, 250, 50, 30);
       ctx.shadowBlur = 0;
 
-      // UI
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.font = '14px "Press Start 2P"';
-      ctx.fillText(`SKOR: ${score}`, 10, 25);
-      ctx.fillText(`❤️ ${lives}`, canvas.width - 80, 25);
-
-      state.spawnRate = 0.03 + score / 1000;
+      ctx.fillStyle = darkMode ? '#fff' : '#1f2937';
+      ctx.font = 'bold 18px Inter';
+      ctx.fillText(`Skor: ${score}`, 15, 30);
+      ctx.fillText(`❤️ ${lives}`, canvas.width - 70, 30);
 
       animationId = requestAnimationFrame(gameLoop);
     };
@@ -586,13 +530,13 @@ function CollectorGame({ darkMode, onGameEnd }) {
       window.removeEventListener('keyup', handleKeyUp);
       cancelAnimationFrame(animationId);
     };
-  }, [score, lives]);
+  }, [score, lives, darkMode, onGameEnd]);
 
   return <canvas ref={canvasRef} width={600} height={300} className="w-full h-full" />;
 }
 
 // ============================================
-// OYUN 4: DODGER - Düşmanlardan kaç
+// OYUN 4: DODGER - Daha kolay
 // ============================================
 function DodgerGame({ darkMode, onGameEnd }) {
   const canvasRef = useRef(null);
@@ -602,7 +546,9 @@ function DodgerGame({ darkMode, onGameEnd }) {
     playerY: 140,
     enemies: [],
     gameOver: false,
-    keys: {}
+    keys: {},
+    frameCount: 0,
+    spawnRate: 120 // Daha seyrek spawn
   });
 
   useEffect(() => {
@@ -615,9 +561,7 @@ function DodgerGame({ darkMode, onGameEnd }) {
       state.keys[e.key] = true;
       if (e.key === 'Escape') state.gameOver = true;
     };
-    const handleKeyUp = (e) => {
-      state.keys[e.key] = false;
-    };
+    const handleKeyUp = (e) => state.keys[e.key] = false;
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -628,50 +572,51 @@ function DodgerGame({ darkMode, onGameEnd }) {
         return;
       }
 
-      ctx.fillStyle = darkMode ? '#1a1a2e' : '#e2e8f0';
+      state.frameCount++;
+
+      ctx.fillStyle = darkMode ? '#1f2937' : '#f3f4f6';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Movement
-      if (state.keys['ArrowLeft']) state.playerX -= 6;
-      if (state.keys['ArrowRight']) state.playerX += 6;
-      if (state.keys['ArrowUp']) state.playerY -= 6;
-      if (state.keys['ArrowDown']) state.playerY += 6;
+      if (state.keys['ArrowLeft']) state.playerX -= 5;
+      if (state.keys['ArrowRight']) state.playerX += 5;
+      if (state.keys['ArrowUp']) state.playerY -= 5;
+      if (state.keys['ArrowDown']) state.playerY += 5;
 
       state.playerX = Math.max(0, Math.min(canvas.width - 30, state.playerX));
       state.playerY = Math.max(0, Math.min(canvas.height - 30, state.playerY));
 
       // Spawn enemies
-      if (Math.random() < 0.04) {
+      if (state.frameCount % state.spawnRate === 0) {
         const side = Math.floor(Math.random() * 4);
         let x, y, vx, vy;
+        const speed = 2 + Math.random() * 1.5;
         
         switch(side) {
-          case 0: x = -20; y = Math.random() * canvas.height; vx = 3 + Math.random() * 2; vy = 0; break;
-          case 1: x = canvas.width; y = Math.random() * canvas.height; vx = -(3 + Math.random() * 2); vy = 0; break;
-          case 2: x = Math.random() * canvas.width; y = -20; vx = 0; vy = 3 + Math.random() * 2; break;
-          case 3: x = Math.random() * canvas.width; y = canvas.height; vx = 0; vy = -(3 + Math.random() * 2); break;
+          case 0: x = -20; y = Math.random() * canvas.height; vx = speed; vy = 0; break;
+          case 1: x = canvas.width; y = Math.random() * canvas.height; vx = -speed; vy = 0; break;
+          case 2: x = Math.random() * canvas.width; y = -20; vx = 0; vy = speed; break;
+          default: x = Math.random() * canvas.width; y = canvas.height; vx = 0; vy = -speed; break;
         }
         
-        state.enemies.push({ x, y, vx, vy, size: 15 + Math.random() * 10 });
+        state.enemies.push({ x, y, vx, vy, size: 18 + Math.random() * 12 });
       }
 
-      // Update enemies
       state.enemies = state.enemies.filter(enemy => {
         enemy.x += enemy.vx;
         enemy.y += enemy.vy;
 
         ctx.fillStyle = '#ef4444';
         ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 5;
+        ctx.shadowBlur = 8;
         ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
         ctx.shadowBlur = 0;
 
-        // Collision
+        // Collision - biraz daha hoşgörülü
         if (
-          state.playerX < enemy.x + enemy.size &&
-          state.playerX + 30 > enemy.x &&
-          state.playerY < enemy.y + enemy.size &&
-          state.playerY + 30 > enemy.y
+          state.playerX + 5 < enemy.x + enemy.size &&
+          state.playerX + 25 > enemy.x &&
+          state.playerY + 5 < enemy.y + enemy.size &&
+          state.playerY + 25 > enemy.y
         ) {
           state.gameOver = true;
         }
@@ -681,17 +626,22 @@ function DodgerGame({ darkMode, onGameEnd }) {
       });
 
       // Draw player
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowColor = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#6366f1';
+      ctx.shadowColor = '#6366f1';
+      ctx.shadowBlur = 15;
       ctx.fillRect(state.playerX, state.playerY, 30, 30);
       ctx.shadowBlur = 0;
 
-      // Score
       setScore(s => s + 1);
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.font = '16px "Press Start 2P"';
-      ctx.fillText(`SKOR: ${score}`, 10, 30);
+
+      // Zorluk artışı daha yavaş
+      if (state.frameCount % 600 === 0 && state.spawnRate > 60) {
+        state.spawnRate -= 10;
+      }
+
+      ctx.fillStyle = darkMode ? '#fff' : '#1f2937';
+      ctx.font = 'bold 18px Inter';
+      ctx.fillText(`Skor: ${score}`, 15, 30);
 
       animationId = requestAnimationFrame(gameLoop);
     };
@@ -703,13 +653,13 @@ function DodgerGame({ darkMode, onGameEnd }) {
       window.removeEventListener('keyup', handleKeyUp);
       cancelAnimationFrame(animationId);
     };
-  }, [score]);
+  }, [score, darkMode, onGameEnd]);
 
   return <canvas ref={canvasRef} width={600} height={300} className="w-full h-full" />;
 }
 
 // ============================================
-// OYUN 5: CLIMBER - Yukarı tırman
+// OYUN 5: CLIMBER - Daha kolay
 // ============================================
 function ClimberGame({ darkMode, onGameEnd }) {
   const canvasRef = useRef(null);
@@ -721,7 +671,7 @@ function ClimberGame({ darkMode, onGameEnd }) {
     walls: [],
     gameOver: false,
     keys: {},
-    scrollSpeed: 1,
+    scrollSpeed: 0.8, // Daha yavaş scroll
     onWall: null
   });
 
@@ -731,12 +681,12 @@ function ClimberGame({ darkMode, onGameEnd }) {
     let animationId;
     const state = gameState.current;
 
-    // Initialize walls
-    for (let i = 0; i < 10; i++) {
+    // Initialize walls - daha geniş
+    for (let i = 0; i < 12; i++) {
       state.walls.push({
-        x: i % 2 === 0 ? 0 : canvas.width - 80,
-        y: 300 - i * 60,
-        width: 80,
+        x: i % 2 === 0 ? 0 : canvas.width - 100,
+        y: 300 - i * 55,
+        width: 100,
         height: 40,
         side: i % 2 === 0 ? 'left' : 'right'
       });
@@ -746,13 +696,11 @@ function ClimberGame({ darkMode, onGameEnd }) {
       state.keys[e.key] = true;
       if (e.key === 'Escape') state.gameOver = true;
       if (e.key === 'ArrowUp' && state.onWall) {
-        state.velocityY = -12;
+        state.velocityY = -10;
         state.onWall = null;
       }
     };
-    const handleKeyUp = (e) => {
-      state.keys[e.key] = false;
-    };
+    const handleKeyUp = (e) => state.keys[e.key] = false;
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
@@ -763,26 +711,22 @@ function ClimberGame({ darkMode, onGameEnd }) {
         return;
       }
 
-      ctx.fillStyle = darkMode ? '#1a1a2e' : '#e2e8f0';
+      ctx.fillStyle = darkMode ? '#1f2937' : '#f3f4f6';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Scroll
       state.walls.forEach(w => w.y += state.scrollSpeed);
       state.playerY += state.scrollSpeed;
 
-      // Movement
       if (state.keys['ArrowLeft']) state.playerX -= 5;
       if (state.keys['ArrowRight']) state.playerX += 5;
 
-      // Gravity
       if (!state.onWall) {
-        state.velocityY += 0.5;
+        state.velocityY += 0.4;
         state.playerY += state.velocityY;
       } else {
         state.velocityY = 0;
       }
 
-      // Wall collision
       state.onWall = null;
       state.walls.forEach(wall => {
         if (
@@ -798,49 +742,47 @@ function ClimberGame({ darkMode, onGameEnd }) {
       });
 
       // Generate new walls
-      while (state.walls[state.walls.length - 1].y > -50) {
+      while (state.walls[state.walls.length - 1].y > -30) {
         const lastWall = state.walls[state.walls.length - 1];
         const newSide = lastWall.side === 'left' ? 'right' : 'left';
         state.walls.push({
-          x: newSide === 'left' ? 0 : canvas.width - 80,
-          y: lastWall.y - 60 - Math.random() * 30,
-          width: 80,
+          x: newSide === 'left' ? 0 : canvas.width - 100,
+          y: lastWall.y - 50 - Math.random() * 25,
+          width: 100,
           height: 40,
           side: newSide
         });
         setScore(s => s + 5);
       }
 
-      // Remove old walls
       state.walls = state.walls.filter(w => w.y < canvas.height + 50);
 
-      // Death
-      if (state.playerY > canvas.height) {
-        state.gameOver = true;
-      }
+      if (state.playerY > canvas.height) state.gameOver = true;
 
       // Draw walls
       state.walls.forEach(wall => {
-        ctx.fillStyle = darkMode ? '#84cc16' : '#22c55e';
-        ctx.shadowColor = darkMode ? '#84cc16' : '#22c55e';
-        ctx.shadowBlur = 5;
+        ctx.fillStyle = '#10b981';
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = 8;
         ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
         ctx.shadowBlur = 0;
       });
 
       // Draw player
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowColor = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#6366f1';
+      ctx.shadowColor = '#6366f1';
+      ctx.shadowBlur = 15;
       ctx.fillRect(state.playerX, state.playerY, 30, 30);
       ctx.shadowBlur = 0;
 
-      // Score
-      ctx.fillStyle = darkMode ? '#22d3ee' : '#d946ef';
-      ctx.font = '16px "Press Start 2P"';
-      ctx.fillText(`SKOR: ${score}`, 10, 30);
+      // Zorluk artışı daha yavaş
+      if (score % 100 === 0 && score > 0 && state.scrollSpeed < 2) {
+        state.scrollSpeed += 0.05;
+      }
 
-      state.scrollSpeed = 1 + score / 200;
+      ctx.fillStyle = darkMode ? '#fff' : '#1f2937';
+      ctx.font = 'bold 18px Inter';
+      ctx.fillText(`Skor: ${score}`, 15, 30);
 
       animationId = requestAnimationFrame(gameLoop);
     };
@@ -852,7 +794,7 @@ function ClimberGame({ darkMode, onGameEnd }) {
       window.removeEventListener('keyup', handleKeyUp);
       cancelAnimationFrame(animationId);
     };
-  }, [score]);
+  }, [score, darkMode, onGameEnd]);
 
   return <canvas ref={canvasRef} width={600} height={300} className="w-full h-full" />;
 }

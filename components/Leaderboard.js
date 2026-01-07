@@ -5,50 +5,45 @@ import { useStore } from '@/lib/store';
 export default function Leaderboard() {
   const { darkMode, leaderboard, profile } = useStore();
 
-  const theme = darkMode ? {
-    surface: 'bg-gray-900',
-    text: 'text-gray-100',
-    textMuted: 'text-gray-400',
-    border: 'border-cyan-500/30',
-    neonPrimary: 'text-cyan-400',
-    neonSecondary: 'text-fuchsia-400',
-    neonAccent: 'text-lime-400',
-    highlight: 'bg-cyan-500/10',
-  } : {
-    surface: 'bg-white',
-    text: 'text-gray-900',
-    textMuted: 'text-gray-600',
-    border: 'border-fuchsia-400/30',
-    neonPrimary: 'text-fuchsia-600',
-    neonSecondary: 'text-cyan-600',
-    neonAccent: 'text-emerald-600',
-    highlight: 'bg-fuchsia-500/10',
-  };
-
-  // Mock data if no leaderboard
   const displayData = leaderboard.length > 0 ? leaderboard : [
-    { username: 'PLAYER1', game_type: 'runner', best_score: 9850 },
-    { username: 'NINJA42', game_type: 'runner', best_score: 8720 },
-    { username: 'CODER_X', game_type: 'runner', best_score: 7650 },
-    { username: 'FOCUS99', game_type: 'runner', best_score: 5200 },
-    { username: 'PRO_DEV', game_type: 'runner', best_score: 4100 },
+    { username: 'player1', game_type: 'runner', best_score: 9850 },
+    { username: 'ninja42', game_type: 'runner', best_score: 8720 },
+    { username: 'coder_x', game_type: 'runner', best_score: 7650 },
+    { username: 'focus99', game_type: 'runner', best_score: 5200 },
+    { username: 'pro_dev', game_type: 'runner', best_score: 4100 },
   ];
 
-  const getRankEmoji = (index) => {
+  const getRankStyle = (index) => {
+    if (index === 0) return 'leaderboard-item top-1';
+    if (index === 1) return 'leaderboard-item top-2';
+    if (index === 2) return 'leaderboard-item top-3';
+    return 'leaderboard-item';
+  };
+
+  const getRankBadge = (index) => {
     if (index === 0) return '🥇';
     if (index === 1) return '🥈';
     if (index === 2) return '🥉';
-    return `${index + 1}.`;
+    return `${index + 1}`;
   };
 
   return (
-    <div className={`${theme.surface} ${theme.border} border-4 p-4 shadow-neon-pink`}>
-      <h3 
-        className={`font-pixel text-xs ${theme.neonSecondary} mb-4`}
-        style={{ textShadow: darkMode ? '0 0 10px fuchsia' : '0 0 10px cyan' }}
-      >
-        🏆 BUGÜNÜN EN İYİLERİ
-      </h3>
+    <div className={`card p-6 ${darkMode ? '' : 'card-light'}`}>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div>
+          <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Liderlik Tablosu
+          </h3>
+          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            Bugünün en iyileri
+          </p>
+        </div>
+      </div>
 
       <div className="space-y-2">
         {displayData.slice(0, 10).map((player, index) => {
@@ -57,19 +52,30 @@ export default function Leaderboard() {
           return (
             <div
               key={index}
-              className={`flex justify-between items-center py-2 px-2 
-                ${isCurrentUser ? theme.highlight : ''} 
-                ${theme.border} border-b last:border-b-0`}
+              className={`${getRankStyle(index)} ${isCurrentUser ? 'ring-2 ring-primary' : ''}`}
             >
-              <div className="flex items-center gap-2">
-                <span className="font-pixel text-xs w-6">
-                  {getRankEmoji(index)}
+              <div className="flex items-center gap-3">
+                <span className="text-lg w-8 text-center">
+                  {getRankBadge(index)}
                 </span>
-                <span className={`font-pixel text-xs ${isCurrentUser ? theme.neonAccent : theme.textMuted}`}>
-                  {player.username?.toUpperCase().slice(0, 10) || 'ANONIM'}
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-bold">
+                  {player.username?.[0]?.toUpperCase() || '?'}
+                </div>
+                <span className={`font-medium ${
+                  isCurrentUser 
+                    ? 'text-primary' 
+                    : darkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  {player.username?.slice(0, 12) || 'Anonim'}
+                  {isCurrentUser && <span className="text-xs ml-1">(sen)</span>}
                 </span>
               </div>
-              <span className={`font-pixel text-xs ${isCurrentUser ? theme.neonPrimary : theme.text}`}>
+              <span className={`font-display font-bold ${
+                index === 0 ? 'text-yellow-500' :
+                index === 1 ? 'text-gray-400' :
+                index === 2 ? 'text-orange-600' :
+                darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 {player.best_score?.toLocaleString() || 0}
               </span>
             </div>
@@ -78,13 +84,16 @@ export default function Leaderboard() {
       </div>
 
       {displayData.length === 0 && (
-        <p className={`font-pixel text-xs ${theme.textMuted} text-center py-4`}>
-          Henüz skor yok. İlk sen ol! 🎮
-        </p>
+        <div className="text-center py-8">
+          <span className="text-4xl mb-2 block">🎮</span>
+          <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            Henüz skor yok. İlk sen ol!
+          </p>
+        </div>
       )}
 
-      <div className={`mt-4 pt-4 ${theme.border} border-t`}>
-        <p className={`font-pixel text-xs ${theme.textMuted} text-center`}>
+      <div className={`mt-4 pt-4 border-t ${darkMode ? 'border-white/10' : 'border-gray-200'}`}>
+        <p className={`text-xs text-center ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
           Her 30 saniyede güncellenir
         </p>
       </div>

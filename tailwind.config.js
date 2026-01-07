@@ -9,45 +9,64 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        pixel: ['"Press Start 2P"', 'monospace'],
+        sans: ['Inter', 'sans-serif'],
+        display: ['Space Grotesk', 'sans-serif'],
       },
       colors: {
-        neon: {
-          cyan: '#22d3ee',
-          pink: '#d946ef',
-          lime: '#84cc16',
-          orange: '#fb923c',
-          purple: '#a855f7'
+        primary: {
+          DEFAULT: '#6366f1',
+          light: '#818cf8',
+          dark: '#4f46e5',
+        },
+        secondary: {
+          DEFAULT: '#f97316',
+          light: '#fb923c',
+          dark: '#ea580c',
+        },
+        accent: {
+          DEFAULT: '#10b981',
+          light: '#34d399',
+          dark: '#059669',
+        },
+        surface: {
+          dark: '#1a1a2e',
+          'dark-2': '#252542',
+          light: '#ffffff',
+        },
+        background: {
+          dark: '#0f0f1a',
+          light: '#f8fafc',
         }
       },
+      borderRadius: {
+        'xl': '16px',
+        '2xl': '24px',
+      },
+      boxShadow: {
+        'glow': '0 0 20px rgba(99, 102, 241, 0.3)',
+        'glow-lg': '0 0 40px rgba(99, 102, 241, 0.4)',
+        'glow-orange': '0 0 20px rgba(249, 115, 22, 0.3)',
+        'glow-green': '0 0 20px rgba(16, 185, 129, 0.3)',
+      },
       animation: {
-        'pulse-neon': 'pulse-neon 2s ease-in-out infinite',
         'float': 'float 3s ease-in-out infinite',
-        'glitch': 'glitch 0.3s ease-in-out infinite',
+        'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'spin-slow': 'spin-slow 20s linear infinite',
       },
       keyframes: {
-        'pulse-neon': {
-          '0%, 100%': { opacity: 1 },
-          '50%': { opacity: 0.5 },
-        },
-        'float': {
+        float: {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-10px)' },
         },
-        'glitch': {
-          '0%': { transform: 'translate(0)' },
-          '20%': { transform: 'translate(-2px, 2px)' },
-          '40%': { transform: 'translate(-2px, -2px)' },
-          '60%': { transform: 'translate(2px, 2px)' },
-          '80%': { transform: 'translate(2px, -2px)' },
-          '100%': { transform: 'translate(0)' },
-        }
+        'pulse-soft': {
+          '0%, 100%': { opacity: 1 },
+          '50%': { opacity: 0.7 },
+        },
+        'spin-slow': {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
       },
-      boxShadow: {
-        'neon-cyan': '0 0 20px rgba(34, 211, 238, 0.5), 0 0 40px rgba(34, 211, 238, 0.3)',
-        'neon-pink': '0 0 20px rgba(217, 70, 239, 0.5), 0 0 40px rgba(217, 70, 239, 0.3)',
-        'neon-lime': '0 0 20px rgba(132, 204, 22, 0.5), 0 0 40px rgba(132, 204, 22, 0.3)',
-      }
     },
   },
   plugins: [],

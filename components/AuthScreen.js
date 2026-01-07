@@ -37,157 +37,148 @@ export default function AuthScreen() {
     }
   };
 
-  const theme = darkMode ? {
-    bg: 'bg-gray-950',
-    surface: 'bg-gray-900',
-    text: 'text-gray-100',
-    textMuted: 'text-gray-400',
-    border: 'border-cyan-500/30',
-    neonPrimary: 'text-cyan-400',
-    neonSecondary: 'text-fuchsia-400',
-    input: 'bg-gray-800 border-cyan-500/30 focus:border-cyan-400',
-    button: 'bg-cyan-500 hover:bg-cyan-400 text-gray-950',
-  } : {
-    bg: 'bg-slate-100',
-    surface: 'bg-white',
-    text: 'text-gray-900',
-    textMuted: 'text-gray-600',
-    border: 'border-fuchsia-400/30',
-    neonPrimary: 'text-fuchsia-600',
-    neonSecondary: 'text-cyan-600',
-    input: 'bg-slate-50 border-fuchsia-400/30 focus:border-fuchsia-400',
-    button: 'bg-fuchsia-500 hover:bg-fuchsia-400 text-white',
-  };
-
   return (
-    <div className={`min-h-screen ${theme.bg} flex items-center justify-center p-4`}>
-      <div className={`${theme.surface} ${theme.border} border-4 p-8 max-w-md w-full shadow-neon-cyan`}>
+    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className={`text-2xl font-pixel ${theme.neonPrimary} neon-text-cyan mb-2`}>
-            POMODORO
+          <img 
+            src="/logo.png" 
+            alt="Pomonero" 
+            className="w-24 h-24 mx-auto mb-4 animate-float"
+          />
+          <h1 className="text-3xl font-bold font-display text-white mb-2">
+            POMONERO
           </h1>
-          <h2 className={`text-lg font-pixel ${theme.neonSecondary} neon-text-pink`}>
-            QUEST
-          </h2>
-          
-          {/* Pixel Tomato */}
-          <div className="flex justify-center my-6">
-            <div className="grid grid-cols-8 gap-0.5">
-              {[
-                '00011000',
-                '00111100',
-                '01111110',
-                '11111111',
-                '11111111',
-                '11111111',
-                '01111110',
-                '00111100',
-              ].map((row, i) => (
-                row.split('').map((cell, j) => (
-                  <div 
-                    key={`${i}-${j}`} 
-                    className={`w-3 h-3 ${cell === '1' ? (i < 2 ? 'bg-green-500' : 'bg-red-500') : 'bg-transparent'}`}
-                    style={{ boxShadow: cell === '1' ? '0 0 5px currentColor' : 'none' }}
-                  />
-                ))
-              ))}
-            </div>
+          <p className="text-gray-400">
+            Çalış • Oyna • Kazan
+          </p>
+        </div>
+
+        {/* Card */}
+        <div className="card p-8">
+          {/* Tab Switcher */}
+          <div className="flex mb-6 p-1 bg-white/5 rounded-xl">
+            <button
+              onClick={() => setIsLogin(true)}
+              className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
+                isLogin
+                  ? 'bg-gradient-to-r from-primary to-primary-light text-white shadow-glow'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Giriş Yap
+            </button>
+            <button
+              onClick={() => setIsLogin(false)}
+              className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
+                !isLogin
+                  ? 'bg-gradient-to-r from-primary to-primary-light text-white shadow-glow'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              Kayıt Ol
+            </button>
           </div>
-        </div>
 
-        {/* Tab Switcher */}
-        <div className="flex mb-6">
-          <button
-            onClick={() => setIsLogin(true)}
-            className={`flex-1 py-3 text-xs font-pixel border-2 ${theme.border} transition-all
-              ${isLogin ? theme.button : `${theme.surface} ${theme.textMuted}`}`}
-          >
-            GİRİŞ
-          </button>
-          <button
-            onClick={() => setIsLogin(false)}
-            className={`flex-1 py-3 text-xs font-pixel border-2 ${theme.border} transition-all
-              ${!isLogin ? theme.button : `${theme.surface} ${theme.textMuted}`}`}
-          >
-            KAYIT
-          </button>
-        </div>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Kullanıcı Adı
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  className="w-full input-modern"
+                  placeholder="kullanici_adi"
+                  maxLength={16}
+                />
+              </div>
+            )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
             <div>
-              <label className={`block text-xs font-pixel ${theme.textMuted} mb-2`}>
-                KULLANICI ADI
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Email
               </label>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                className={`w-full p-3 font-pixel text-xs ${theme.input} ${theme.text} border-2 focus:outline-none`}
-                placeholder="oyuncu_adi"
-                maxLength={16}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full input-modern"
+                placeholder="email@example.com"
+                required
               />
             </div>
-          )}
 
-          <div>
-            <label className={`block text-xs font-pixel ${theme.textMuted} mb-2`}>
-              EMAIL
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`w-full p-3 font-pixel text-xs ${theme.input} ${theme.text} border-2 focus:outline-none`}
-              placeholder="email@ornek.com"
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Şifre
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full input-modern"
+                placeholder="••••••••"
+                minLength={6}
+                required
+              />
+            </div>
+
+            {error && (
+              <div className={`p-3 rounded-lg text-sm ${
+                error.includes('başarılı')
+                  ? 'bg-accent/20 text-accent border border-accent/30'
+                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              }`}>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full btn-primary py-4 text-base disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Yükleniyor...</span>
+                </div>
+              ) : (
+                isLogin ? 'Giriş Yap' : 'Kayıt Ol'
+              )}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-white/10"></div>
+            <span className="text-gray-500 text-sm">veya</span>
+            <div className="flex-1 h-px bg-white/10"></div>
           </div>
 
-          <div>
-            <label className={`block text-xs font-pixel ${theme.textMuted} mb-2`}>
-              ŞİFRE
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`w-full p-3 font-pixel text-xs ${theme.input} ${theme.text} border-2 focus:outline-none`}
-              placeholder="••••••••"
-              minLength={6}
-              required
-            />
-          </div>
-
-          {error && (
-            <p className={`text-xs font-pixel ${error.includes('başarılı') ? 'text-green-400' : 'text-red-400'}`}>
-              {error}
-            </p>
-          )}
-
+          {/* Theme Toggle */}
           <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-4 font-pixel text-xs ${theme.button} retro-btn transition-all
-              ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+            onClick={toggleDarkMode}
+            className="w-full py-3 rounded-xl bg-white/5 text-gray-400 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
           >
-            {loading ? 'YÜKLENİYOR...' : isLogin ? '▶ GİRİŞ YAP' : '▶ KAYIT OL'}
+            {darkMode ? '☀️ Açık Mod' : '🌙 Koyu Mod'}
           </button>
-        </form>
-
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleDarkMode}
-          className={`w-full mt-4 py-3 font-pixel text-xs ${theme.surface} ${theme.textMuted} ${theme.border} border-2`}
-        >
-          {darkMode ? '☀ AÇIK MOD' : '🌙 KOYU MOD'}
-        </button>
+        </div>
 
         {/* Footer */}
-        <p className={`text-center text-xs font-pixel ${theme.textMuted} mt-6`}>
-          ÇALIŞ • OYNA • KAZAN
+        <p className="text-center text-gray-500 text-sm mt-6">
+          Pomodoro tekniği ile üretkenliğini artır 🍅
         </p>
       </div>
     </div>

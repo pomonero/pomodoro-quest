@@ -8,9 +8,13 @@ import { useStore } from '@/lib/store';
 import AuthScreen from '@/components/AuthScreen';
 import Header from '@/components/Header';
 import Timer from '@/components/Timer';
+import Calendar from '@/components/Calendar';
+import LiveClock from '@/components/LiveClock';
 import Leaderboard from '@/components/Leaderboard';
 import Stats from '@/components/Stats';
 import Settings from '@/components/Settings';
+import Profile from '@/components/Profile';
+import MusicPlayer from '@/components/MusicPlayer';
 import GameModal from '@/components/GameModal';
 import AdSpace from '@/components/AdSpace';
 
@@ -21,11 +25,11 @@ export default function Home() {
     isLoading, setLoading,
     darkMode,
     showGame,
+    showSettings, setShowSettings,
+    showProfile, setShowProfile,
     stats, setStats,
     leaderboard, setLeaderboard
   } = useStore();
-
-  const [showSettings, setShowSettings] = useState(false);
 
   // Auth state listener
   useEffect(() => {
@@ -67,7 +71,7 @@ export default function Home() {
     };
 
     loadLeaderboard();
-    const interval = setInterval(loadLeaderboard, 30000); // 30 saniyede bir güncelle
+    const interval = setInterval(loadLeaderboard, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -75,12 +79,18 @@ export default function Home() {
   // Loading screen
   if (isLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-950' : 'bg-slate-100'}`}>
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-pulse">🍅</div>
-          <p className={`text-xs font-pixel ${darkMode ? 'text-cyan-400 neon-text-cyan' : 'text-fuchsia-600'}`}>
-            YÜKLENİYOR...
-          </p>
+          <img 
+            src="/logo.png" 
+            alt="Pomonero" 
+            className="w-24 h-24 mx-auto mb-4 animate-float"
+          />
+          <div className="flex items-center gap-2 justify-center">
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
         </div>
       </div>
     );
@@ -93,44 +103,44 @@ export default function Home() {
 
   // Main app
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-950' : 'bg-slate-100'}`}>
-      <Header onSettingsClick={() => setShowSettings(true)} />
+    <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'gradient-bg' : 'gradient-bg-light'}`}>
+      <Header />
       
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Sol Sidebar - Reklam */}
-          <div className="hidden lg:block lg:col-span-2">
-            <AdSpace size="vertical" />
-          </div>
-
-          {/* Ana İçerik */}
-          <div className="lg:col-span-6">
-            <Timer />
-            
-            {/* Mobil için alt reklam */}
-            <div className="lg:hidden mt-6">
-              <AdSpace size="horizontal" />
+          
+          {/* Sol Kolon - Timer & Calendar */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Üst Kısım - Timer ve Saat */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <Timer />
+              </div>
+              <div className="space-y-6">
+                <LiveClock />
+                <MusicPlayer />
+              </div>
             </div>
+
+            {/* Takvim */}
+            <Calendar />
+
+            {/* Alt Reklam */}
+            <AdSpace size="banner" />
           </div>
 
-          {/* Sağ Sidebar */}
+          {/* Sağ Kolon - Stats, Leaderboard */}
           <div className="lg:col-span-4 space-y-6">
             <Stats />
             <Leaderboard />
             <AdSpace size="square" />
           </div>
         </div>
-
-        {/* Alt Banner Reklam */}
-        <div className="mt-8 hidden lg:block">
-          <AdSpace size="banner" />
-        </div>
       </main>
 
-      {/* Settings Modal */}
+      {/* Modals */}
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
-
-      {/* Game Modal */}
+      {showProfile && <Profile onClose={() => setShowProfile(false)} />}
       {showGame && <GameModal />}
     </div>
   );
