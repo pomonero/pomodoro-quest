@@ -15,6 +15,9 @@ export default function Header() {
   const t = translations[language] || translations.tr;
   const theme = themes[currentTheme] || themes.midnight;
 
+  // Tema tipine göre logo seç (koyu tema = beyaz logo, açık tema = siyah logo)
+  const logoSrc = theme.type === 'dark' ? '/logo-light.png' : '/logo-dark.png';
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setShowUserMenu(false);
@@ -42,9 +45,14 @@ export default function Header() {
     <header className="sticky top-0 z-40 glass border-b" style={{ borderColor: 'var(--border)' }}>
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Logo */}
+          {/* Logo - Büyütüldü */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
-            <img src="/logo.png" alt="Pomonero" className="h-8 md:h-10" />
+            <img 
+              src={logoSrc} 
+              alt="Pomonero" 
+              className="h-10 md:h-12 w-auto object-contain"
+              style={{ maxWidth: '160px' }}
+            />
           </div>
 
           {/* Desktop Nav */}
@@ -95,6 +103,7 @@ export default function Header() {
                         onClick={() => { setTheme(th.id); setShowThemeMenu(false); }}
                         className={`p-2 rounded-lg text-xl transition-all ${currentTheme === th.id ? 'ring-2 ring-[var(--primary)]' : ''}`}
                         style={{ background: th.colors.surface }}
+                        title={language === 'tr' ? th.name : th.nameEn}
                       >
                         {th.pixelArt}
                       </button>
@@ -108,6 +117,7 @@ export default function Header() {
                         onClick={() => { setTheme(th.id); setShowThemeMenu(false); }}
                         className={`p-2 rounded-lg text-xl transition-all ${currentTheme === th.id ? 'ring-2 ring-[var(--primary)]' : ''}`}
                         style={{ background: th.colors.surface }}
+                        title={language === 'tr' ? th.name : th.nameEn}
                       >
                         {th.pixelArt}
                       </button>

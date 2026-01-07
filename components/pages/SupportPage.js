@@ -33,16 +33,16 @@ export default function SupportPage() {
       icon: '⏱️',
       title: language === 'tr' ? 'Zamanlayıcı Kullanımı' : 'Timer Usage',
       content: language === 'tr' ? [
-        '• Odaklan (🎯): 25 dakika çalışma süresi',
-        '• Kısa Mola (☕): 5 dakika dinlenme',
-        '• Uzun Mola (🌴): 30 dakika dinlenme (her 4 oturumda)',
-        '• Ayarlardan süreleri özelleştirebilirsiniz',
+        '• Odaklan (🎯): Çalışma süresi (varsayılan 25 dk)',
+        '• Kısa Mola (☕): Dinlenme süresi (varsayılan 5 dk)',
+        '• Uzun Mola (🌴): Her 4 oturumda bir (varsayılan 30 dk)',
+        '• Ayarlardan süreleri 1 dakikaya kadar düşürebilirsiniz',
         '• Hazır şablonlar: Klasik, Kısa, Uzun, 52/17'
       ] : [
-        '• Focus (🎯): 25 minutes work time',
-        '• Short Break (☕): 5 minutes rest',
-        '• Long Break (🌴): 30 minutes rest (every 4 sessions)',
-        '• Customize durations in settings',
+        '• Focus (🎯): Work time (default 25 min)',
+        '• Short Break (☕): Rest time (default 5 min)',
+        '• Long Break (🌴): Every 4 sessions (default 30 min)',
+        '• You can reduce durations down to 1 minute in settings',
         '• Presets: Classic, Short, Long, 52/17'
       ]
     },
@@ -101,7 +101,7 @@ export default function SupportPage() {
     },
     {
       q: language === 'tr' ? 'Süreleri değiştirebilir miyim?' : 'Can I change the durations?',
-      a: language === 'tr' ? 'Evet, sağ üstteki menüden Ayarlara giderek süreleri özelleştirebilirsiniz.' : 'Yes, you can customize durations by going to Settings from the top right menu.'
+      a: language === 'tr' ? 'Evet, sağ üstteki menüden Ayarlara giderek süreleri 1 dakikaya kadar düşürebilirsiniz.' : 'Yes, you can customize durations down to 1 minute by going to Settings from the top right menu.'
     }
   ];
 
@@ -124,7 +124,7 @@ export default function SupportPage() {
         <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text)' }}>
           📚 {language === 'tr' ? 'Rehberler' : 'Guides'}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-3">
           {guides.map((guide) => (
             <div key={guide.id} className="card overflow-hidden">
               <button
