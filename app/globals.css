@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500&family=Montserrat:wght@700;800;900&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Default Theme - Midnight */
   --background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
   --surface: rgba(26, 26, 46, 0.9);
   --surface-hover: rgba(30, 30, 60, 0.95);
@@ -30,11 +29,30 @@ body {
   overflow-x: hidden;
 }
 
-/* ==========================================
-   TEMA CSS DEĞİŞKENLERİ
-   ========================================== */
+/* LOGO FONT STİLİ - İnce/Kalın kombinasyon */
+.font-logo-thin {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 400;
+}
 
-/* Koyu Temalar */
+.font-logo-bold {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+}
+
+/* Site genelinde başlıklar için */
+.heading-styled {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+}
+
+.text-styled-thin {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+}
+
+/* TEMA CSS DEĞİŞKENLERİ */
 [data-theme="midnight"] {
   --background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
   --surface: rgba(26, 26, 46, 0.9);
@@ -87,7 +105,6 @@ body {
   --border: rgba(251, 146, 60, 0.2);
 }
 
-/* Açık Temalar */
 [data-theme="snow"] {
   --background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
   --surface: rgba(255, 255, 255, 0.95);
@@ -140,71 +157,7 @@ body {
   --border: rgba(249, 115, 22, 0.2);
 }
 
-/* ==========================================
-   PIXEL ART STİLLERİ
-   ========================================== */
-
-.pixel-font {
-  font-family: 'Press Start 2P', cursive;
-}
-
-.pixel-border {
-  border: 4px solid var(--primary);
-  box-shadow: 
-    4px 4px 0 0 var(--primary-light),
-    inset -2px -2px 0 0 rgba(255,255,255,0.2);
-}
-
-.pixel-btn {
-  position: relative;
-  background: var(--primary);
-  border: none;
-  padding: 12px 24px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.1s;
-  box-shadow: 
-    4px 4px 0 0 rgba(0,0,0,0.3),
-    inset -2px -2px 0 0 rgba(0,0,0,0.2),
-    inset 2px 2px 0 0 rgba(255,255,255,0.2);
-}
-
-.pixel-btn:hover {
-  transform: translate(2px, 2px);
-  box-shadow: 
-    2px 2px 0 0 rgba(0,0,0,0.3),
-    inset -2px -2px 0 0 rgba(0,0,0,0.2),
-    inset 2px 2px 0 0 rgba(255,255,255,0.2);
-}
-
-.pixel-btn:active {
-  transform: translate(4px, 4px);
-  box-shadow: 
-    0px 0px 0 0 rgba(0,0,0,0.3),
-    inset -2px -2px 0 0 rgba(0,0,0,0.2),
-    inset 2px 2px 0 0 rgba(255,255,255,0.2);
-}
-
-/* Pixel art decorations */
-.pixel-star {
-  width: 16px;
-  height: 16px;
-  background: var(--accent);
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-}
-
-.pixel-heart {
-  width: 16px;
-  height: 16px;
-  background: #ef4444;
-  clip-path: polygon(50% 100%, 0% 35%, 25% 0%, 50% 20%, 75% 0%, 100% 35%);
-}
-
-/* ==========================================
-   GLASSMORPHISM & CARDS
-   ========================================== */
-
+/* GLASSMORPHISM & CARDS */
 .glass {
   background: var(--surface);
   backdrop-filter: blur(10px);
@@ -223,10 +176,7 @@ body {
   box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
 }
 
-/* ==========================================
-   BUTONLAR
-   ========================================== */
-
+/* BUTONLAR */
 .btn-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   color: white;
@@ -259,24 +209,14 @@ body {
   border-color: var(--primary);
 }
 
-/* ==========================================
-   TIMER
-   ========================================== */
-
+/* TIMER */
 .timer-display {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.timer-glow {
-  filter: drop-shadow(0 0 20px var(--primary));
-}
-
-/* ==========================================
-   ANİMASYONLAR
-   ========================================== */
-
+/* ANİMASYONLAR */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
@@ -313,27 +253,7 @@ body {
   animation: sparkle 1.5s ease-in-out infinite;
 }
 
-/* ==========================================
-   PIXEL ART ARKAPLAN DESENLERİ
-   ========================================== */
-
-.pixel-dots-bg {
-  background-image: radial-gradient(var(--primary) 1px, transparent 1px);
-  background-size: 20px 20px;
-  opacity: 0.1;
-}
-
-.pixel-grid-bg {
-  background-image: 
-    linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* ==========================================
-   SCROLLBAR
-   ========================================== */
-
+/* SCROLLBAR */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -353,10 +273,7 @@ body {
   background: var(--primary-light);
 }
 
-/* ==========================================
-   INPUT STİLLERİ
-   ========================================== */
-
+/* INPUT STİLLERİ */
 .input-modern {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -377,10 +294,7 @@ body {
   color: var(--text-muted);
 }
 
-/* ==========================================
-   MOBİL UYUMLULUK
-   ========================================== */
-
+/* MOBİL UYUMLULUK */
 @media (max-width: 768px) {
   .timer-display {
     font-size: 2.5rem;
@@ -401,19 +315,7 @@ body {
   }
 }
 
-/* ==========================================
-   ÖZEL EFEKTLER
-   ========================================== */
-
-/* Neon glow */
-.neon-text {
-  text-shadow: 
-    0 0 5px var(--primary),
-    0 0 10px var(--primary),
-    0 0 20px var(--primary);
-}
-
-/* Gradient text */
+/* GRADIENT TEXT */
 .gradient-text {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
@@ -421,18 +323,8 @@ body {
   background-clip: text;
 }
 
-/* Focus ring */
+/* FOCUS RING */
 .focus-ring:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
-}
-
-/* Pixel art corners */
-.pixel-corners {
-  clip-path: polygon(
-    0 8px, 8px 8px, 8px 0,
-    calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px,
-    100% calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 100%,
-    8px 100%, 8px calc(100% - 8px), 0 calc(100% - 8px)
-  );
 }

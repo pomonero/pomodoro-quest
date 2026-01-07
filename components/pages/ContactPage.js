@@ -18,9 +18,17 @@ export default function ContactPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Form gönderme işlemi
+    
+    // Mailto linki oluştur
+    const mailtoLink = `mailto:destek@pomonero.com?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(
+      `Ad: ${formData.name}\nE-posta: ${formData.email}\n\nMesaj:\n${formData.message}`
+    )}`;
+    
+    // Mail uygulamasını aç
+    window.location.href = mailtoLink;
+    
     setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
+    setTimeout(() => setSubmitted(false), 5000);
     setFormData({ name: '', email: '', subject: '', message: '' });
   };
 
@@ -39,16 +47,42 @@ export default function ContactPage() {
         </p>
       </div>
 
+      {/* Contact Info */}
+      <div className="card p-6 mb-6">
+        <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text)' }}>
+          <span>📬</span> {t.contactInfo}
+        </h3>
+        <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center">
+            <span className="text-2xl">✉️</span>
+          </div>
+          <div>
+            <p className="font-medium" style={{ color: 'var(--text)' }}>E-posta</p>
+            <a 
+              href="mailto:destek@pomonero.com" 
+              className="text-[var(--primary)] hover:underline"
+            >
+              destek@pomonero.com
+            </a>
+          </div>
+        </div>
+        <p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>
+          {language === 'tr' 
+            ? '📝 Aşağıdaki formu doldurduğunuzda e-posta uygulamanız açılacak ve mesajınızı gönderebileceksiniz.'
+            : '📝 When you fill out the form below, your email app will open and you can send your message.'}
+        </p>
+      </div>
+
       {/* Contact Form */}
       <div className="card p-6">
         {submitted ? (
           <div className="text-center py-8">
             <span className="text-6xl mb-4 block">✅</span>
             <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>
-              {language === 'tr' ? 'Mesajınız Gönderildi!' : 'Message Sent!'}
+              {language === 'tr' ? 'E-posta Uygulamanız Açıldı!' : 'Email App Opened!'}
             </h3>
             <p style={{ color: 'var(--text-muted)' }}>
-              {language === 'tr' ? 'En kısa sürede dönüş yapacağız.' : 'We will get back to you soon.'}
+              {language === 'tr' ? 'Mesajınızı göndermek için e-posta uygulamanızı kontrol edin.' : 'Check your email app to send your message.'}
             </p>
           </div>
         ) : (
@@ -110,7 +144,7 @@ export default function ContactPage() {
             </div>
 
             <button type="submit" className="w-full btn-primary py-3">
-              {t.contactSend}
+              📧 {t.contactSend}
             </button>
           </form>
         )}
@@ -122,13 +156,13 @@ export default function ContactPage() {
           {language === 'tr' ? 'Bizi takip edin' : 'Follow us'}
         </p>
         <div className="flex justify-center gap-4">
-          <a href="#" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
+          <a href="https://twitter.com/pomonero" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
             <span>🐦</span>
           </a>
-          <a href="#" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
+          <a href="https://instagram.com/pomonero" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
             <span>📸</span>
           </a>
-          <a href="#" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
+          <a href="https://discord.gg/pomonero" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface-hover)] transition-colors">
             <span>💬</span>
           </a>
         </div>

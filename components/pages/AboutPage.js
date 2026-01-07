@@ -7,10 +7,6 @@ export default function AboutPage() {
   const { language } = useStore();
   const t = translations[language] || translations.tr;
 
-  const teamMembers = [
-    { name: 'Pomonero Team', role: language === 'tr' ? 'Kurucu' : 'Founder', avatar: '🐱' },
-  ];
-
   const features = [
     { icon: '⏱️', title: language === 'tr' ? 'Pomodoro Timer' : 'Pomodoro Timer', desc: language === 'tr' ? 'Özelleştirilebilir zamanlayıcı' : 'Customizable timer' },
     { icon: '🎮', title: language === 'tr' ? 'Mini Oyunlar' : 'Mini Games', desc: language === 'tr' ? '5 eğlenceli ödül oyunu' : '5 fun reward games' },
@@ -24,7 +20,7 @@ export default function AboutPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Hero */}
       <div className="text-center mb-12">
-        <img src="/logo.png" alt="Pomonero" className="w-24 h-24 mx-auto mb-6 animate-float" />
+        <img src="/logo.png" alt="Pomonero" className="h-16 mx-auto mb-6" />
         <h1 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: 'var(--text)' }}>
           {t.aboutTitle}
         </h1>
@@ -68,7 +64,7 @@ export default function AboutPage() {
       </div>
 
       {/* Tech Stack */}
-      <div className="card p-6">
+      <div className="card p-6 mb-8">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text)' }}>
           <span>🛠️</span> {language === 'tr' ? 'Teknolojiler' : 'Tech Stack'}
         </h2>
@@ -85,15 +81,11 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Pixel Art */}
-      <div className="text-center py-8">
-        <div className="inline-flex items-center gap-4 text-3xl opacity-30">
-          <span>💜</span>
-          <span className="pixel-font text-xs" style={{ color: 'var(--text)' }}>
-            Made with love
-          </span>
-          <span>💜</span>
-        </div>
+      {/* Version Info */}
+      <div className="text-center">
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          <span className="font-logo-thin">Pomo</span><span className="font-logo-bold">nero</span> v2.0
+        </p>
       </div>
     </div>
   );

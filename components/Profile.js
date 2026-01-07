@@ -5,12 +5,22 @@ import { db } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
 import { translations } from '@/lib/translations';
 
+// Kullanılabilir avatar emojileri
+const avatarEmojis = [
+  '😊', '😎', '🤓', '😇', '🥳', '😜', '🤩', '😏',
+  '👨‍💻', '👩‍💻', '👨‍🎓', '👩‍🎓', '👨‍🏫', '👩‍🏫', '🧑‍💼', '👨‍🔬',
+  '🦊', '🐱', '🐶', '🐼', '🐨', '🦁', '🐯', '🐸',
+  '🦄', '🐲', '🦋', '🌟', '🔥', '💎', '🎮', '🎯',
+  '🚀', '⭐', '🌙', '☀️', '🌈', '🍀', '🎸', '🎨',
+];
+
 export default function Profile({ onClose }) {
   const { user, language, profile, setProfile } = useStore();
   const t = translations[language] || translations.tr;
 
   const [formData, setFormData] = useState({
     display_name: profile?.display_name || '',
+    avatar_emoji: profile?.avatar_emoji || '😊',
     school: profile?.school || '',
     department: profile?.department || '',
     subjects: profile?.subjects || '',
@@ -19,6 +29,7 @@ export default function Profile({ onClose }) {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   const handleSave = async () => {
     if (!user) return;
@@ -42,8 +53,17 @@ export default function Profile({ onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white text-xl font-bold">
-              {profile?.username?.[0]?.toUpperCase() || 'P'}
+            {/* Avatar with Picker */}
+            <div className="relative">
+              <button
+                onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-3xl hover:scale-105 transition-transform"
+              >
+                {formData.avatar_emoji}
+              </button>
+              <span className="absolute -bottom-1 -right-1 w-5 h-5 bg-[var(--primary)] rounded-full flex items-center justify-center text-white text-xs">
+                ✏️
+              </span>
             </div>
             <div>
               <h2 className="text-lg font-bold" style={{ color: 'var(--text)' }}>
@@ -64,6 +84,31 @@ export default function Profile({ onClose }) {
             </svg>
           </button>
         </div>
+
+        {/* Avatar Picker */}
+        {showAvatarPicker && (
+          <div className="mb-4 p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
+            <p className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>
+              {t.selectAvatar}
+            </p>
+            <div className="grid grid-cols-8 gap-2">
+              {avatarEmojis.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    setFormData({ ...formData, avatar_emoji: emoji });
+                    setShowAvatarPicker(false);
+                  }}
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center text-xl hover:scale-110 transition-transform ${
+                    formData.avatar_emoji === emoji ? 'ring-2 ring-[var(--primary)] bg-[var(--primary)]/20' : ''
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <div className="space-y-4">
@@ -146,7 +191,7 @@ export default function Profile({ onClose }) {
             <textarea
               value={formData.bio}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="input-modern min-h-[100px] resize-none"
+              className="input-modern min-h-[80px] resize-none"
               placeholder={language === 'tr' ? 'Kendinizden bahsedin...' : 'Tell us about yourself...'}
               maxLength={200}
             />
