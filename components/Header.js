@@ -10,12 +10,13 @@ export default function Header() {
   const { profile, language, toggleLanguage, currentTheme, setTheme, setUser, setProfile, setShowSettings, setShowProfile, currentPage, setCurrentPage } = useStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const menuRef = useRef(null);
   const themeRef = useRef(null);
   const t = translations[language] || translations.tr;
   const theme = themes[currentTheme] || themes.midnight;
 
-  // Tema tipine göre logo seç (koyu tema = beyaz logo, açık tema = siyah logo)
+  // Tema tipine göre logo seç
   const logoSrc = theme.type === 'dark' ? '/logo-light.png' : '/logo-dark.png';
 
   useEffect(() => {
@@ -28,9 +29,23 @@ export default function Header() {
   }, []);
 
   const handleLogout = async () => {
-    await auth.signOut();
-    setUser(null);
-    setProfile(null);
+    setLoggingOut(true);
+    try {
+      await auth.signOut();
+      // Store'u temizle
+      setUser(null);
+      setProfile(null);
+      // LocalStorage temizle
+      localStorage.removeItem('pomonero_user');
+      localStorage.removeItem('pomonero_profile');
+      localStorage.removeItem('pomonero_stats');
+      // Sayfayı yenile
+      window.location.reload();
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const navItems = [
@@ -45,13 +60,13 @@ export default function Header() {
     <header className="sticky top-0 z-40 glass border-b" style={{ borderColor: 'var(--border)' }}>
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Logo - Büyütüldü */}
+          {/* Logo - BÜYÜTÜLDÜ */}
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('home')}>
             <img 
               src={logoSrc} 
               alt="Pomonero" 
-              className="h-10 md:h-12 w-auto object-contain"
-              style={{ maxWidth: '160px' }}
+              className="h-12 md:h-16 w-auto object-contain"
+              style={{ maxWidth: '200px' }}
             />
           </div>
 
@@ -186,10 +201,20 @@ export default function Header() {
                   <div className="border-t mt-2 pt-2" style={{ borderColor: 'var(--border)' }}>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/20 transition-all text-red-400"
+                      disabled={loggingOut}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/20 transition-all text-red-400 disabled:opacity-50"
                     >
-                      <span>🚪</span>
-                      <span className="text-sm">{t.logout}</span>
+                      {loggingOut ? (
+                        <>
+                          <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></span>
+                          <span className="text-sm">{language === 'tr' ? 'Çıkış yapılıyor...' : 'Logging out...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🚪</span>
+                          <span className="text-sm">{t.logout}</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
