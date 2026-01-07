@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon-cyan: #22d3ee;
+  --neon-pink: #d946ef;
+  --neon-lime: #84cc16;
+}
+
+* {
+  image-rendering: pixelated;
+}
+
+body {
+  font-family: 'Press Start 2P', monospace;
+}
+
+/* Pixel border effect */
+.pixel-border {
+  box-shadow: 
+    inset -4px -4px 0px 0px rgba(0,0,0,0.3),
+    inset 4px 4px 0px 0px rgba(255,255,255,0.1);
+}
+
+/* Neon glow text */
+.neon-text-cyan {
+  text-shadow: 
+    0 0 10px var(--neon-cyan),
+    0 0 20px var(--neon-cyan),
+    0 0 30px var(--neon-cyan);
+}
+
+.neon-text-pink {
+  text-shadow: 
+    0 0 10px var(--neon-pink),
+    0 0 20px var(--neon-pink),
+    0 0 30px var(--neon-pink);
+}
+
+.neon-text-lime {
+  text-shadow: 
+    0 0 10px var(--neon-lime),
+    0 0 20px var(--neon-lime),
+    0 0 30px var(--neon-lime);
+}
+
+/* Scanline effect */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+}
+
+/* Retro button */
+.retro-btn {
+  position: relative;
+  transition: all 0.1s ease;
+}
+
+.retro-btn:active {
+  transform: translateY(2px);
+}
+
+.retro-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(0,0,0,0.3);
+  transition: all 0.1s ease;
+}
+
+.retro-btn:active::after {
+  height: 0;
+}
+
+/* Game canvas */
+.game-canvas {
+  background: 
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-pink);
+}
+
+/* Animation for timer */
+@keyframes countdown-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.timer-active {
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+/* Ad placeholder styling */
+.ad-placeholder {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255,255,255,0.03) 10px,
+    rgba(255,255,255,0.03) 20px
+  );
+}
