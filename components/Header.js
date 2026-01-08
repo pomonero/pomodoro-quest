@@ -7,15 +7,13 @@ import { translations } from '@/lib/translations';
 import { themes, getDarkThemes, getLightThemes } from '@/lib/themes';
 
 export default function Header() {
-  const { profile, language, toggleLanguage, currentTheme, setTheme, setUser, setProfile, setShowSettings, setShowProfile, currentPage, setCurrentPage } = useStore();
+  const { profile, language, toggleLanguage, currentTheme, setTheme, setShowSettings, setShowProfile, currentPage, setCurrentPage, setUser, setProfile } = useStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
   const menuRef = useRef(null);
   const themeRef = useRef(null);
   const t = translations[language] || translations.tr;
   const theme = themes[currentTheme] || themes.midnight;
-
   const logoSrc = theme.type === 'dark' ? '/logo-light.png' : '/logo-dark.png';
 
   useEffect(() => {
@@ -27,37 +25,29 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // ÇIKIŞ - KESİNLİKLE ÇALIŞACAK
   const handleLogout = async () => {
-    if (loggingOut) return;
-    setLoggingOut(true);
     setShowUserMenu(false);
     
+    // Store temizle
+    setUser(null);
+    setProfile(null);
+    
+    // Supabase logout
     try {
-      // 1. Supabase oturumunu kapat
-      if (supabase) {
-        await supabase.auth.signOut({ scope: 'global' });
-      }
-    } catch (err) {
-      console.error('Logout error:', err);
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.log('Signout error:', e);
     }
     
-    // 2. Her şeyi temizle ve sayfayı yenile
+    // Storage temizle
     try {
-      // Store temizle
-      setUser(null);
-      setProfile(null);
-      
-      // LocalStorage tamamen temizle
-      if (typeof window !== 'undefined') {
-        localStorage.clear();
-        sessionStorage.clear();
-      }
-    } catch {}
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (e) {}
     
-    // 3. Sayfayı kesinlikle yenile
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
+    // Sayfa yenile
+    window.location.href = '/';
   };
 
   const navItems = [
@@ -69,15 +59,19 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 glass border-b" style={{ borderColor: 'var(--border)' }}>
-      <div className="max-w-7xl mx-auto px-4 py-3">
+    <header className="sticky top-0 z-40 backdrop-blur-xl border-b" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
         <div className="flex items-center justify-between">
-          {/* Logo - DEVASA */}
-          <div className="flex items-center cursor-pointer flex-shrink-0" onClick={() => setCurrentPage('home')}>
+          
+          {/* LOGO - ÇOK BÜYÜK */}
+          <div 
+            className="flex items-center cursor-pointer flex-shrink-0" 
+            onClick={() => setCurrentPage('home')}
+          >
             <img 
               src={logoSrc} 
               alt="Pomonero" 
-              className="h-10 sm:h-12 md:h-14 lg:h-16 w-auto"
+              className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto"
             />
           </div>
 
@@ -99,48 +93,65 @@ export default function Header() {
           </nav>
 
           {/* Right Side */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-2">
+            
             {/* Language */}
-            <button
-              onClick={toggleLanguage}
-              className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all text-base sm:text-lg"
-              style={{ color: 'var(--text)' }}
+            <button 
+              onClick={toggleLanguage} 
+              className="p-2 rounded-lg transition-all text-xl"
+              style={{ background: 'transparent' }}
             >
               {language === 'tr' ? '🇹🇷' : '🇬🇧'}
             </button>
 
             {/* Theme */}
             <div className="relative" ref={themeRef}>
-              <button
-                onClick={() => setShowThemeMenu(!showThemeMenu)}
-                className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all text-base sm:text-lg"
+              <button 
+                onClick={() => setShowThemeMenu(!showThemeMenu)} 
+                className="p-2 rounded-lg transition-all text-xl"
+                style={{ background: 'transparent' }}
               >
                 {theme.pixelArt}
               </button>
+              
               {showThemeMenu && (
-                <div className="absolute right-0 mt-2 w-64 rounded-xl p-3 glass border shadow-xl" style={{ borderColor: 'var(--border)' }}>
-                  <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>{t.darkThemes}</p>
-                  <div className="grid grid-cols-4 gap-2 mb-3">
+                <div 
+                  className="absolute right-0 mt-2 w-72 rounded-xl p-4 shadow-2xl z-50" 
+                  style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+                >
+                  <p className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                    {t.darkThemes}
+                  </p>
+                  <div className="grid grid-cols-4 gap-3 mb-4">
                     {getDarkThemes().map((th) => (
                       <button
                         key={th.id}
                         onClick={() => { setTheme(th.id); setShowThemeMenu(false); }}
-                        className={`p-2 rounded-lg text-xl transition-all ${currentTheme === th.id ? 'ring-2 ring-[var(--primary)]' : ''}`}
-                        style={{ background: th.colors.surface }}
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all hover:scale-110"
+                        style={{ 
+                          background: currentTheme === th.id ? 'var(--primary)' : th.colors.surface,
+                          border: currentTheme === th.id ? '2px solid var(--primary)' : '2px solid transparent'
+                        }}
                         title={language === 'tr' ? th.name : th.nameEn}
                       >
                         {th.pixelArt}
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-muted)' }}>{t.lightThemes}</p>
-                  <div className="grid grid-cols-4 gap-2">
+                  
+                  <p className="text-xs font-semibold mb-3 uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+                    {t.lightThemes}
+                  </p>
+                  <div className="grid grid-cols-4 gap-3">
                     {getLightThemes().map((th) => (
                       <button
                         key={th.id}
                         onClick={() => { setTheme(th.id); setShowThemeMenu(false); }}
-                        className={`p-2 rounded-lg text-xl transition-all ${currentTheme === th.id ? 'ring-2 ring-[var(--primary)]' : ''}`}
-                        style={{ background: th.colors.surface }}
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all hover:scale-110"
+                        style={{ 
+                          background: currentTheme === th.id ? 'var(--primary)' : th.colors.surface,
+                          border: currentTheme === th.id ? '2px solid var(--primary)' : '2px solid transparent'
+                        }}
                         title={language === 'tr' ? th.name : th.nameEn}
                       >
                         {th.pixelArt}
@@ -153,19 +164,29 @@ export default function Header() {
 
             {/* User Menu */}
             <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 p-1.5 sm:p-2 rounded-xl hover:bg-[var(--surface-hover)] transition-all"
+              <button 
+                onClick={() => setShowUserMenu(!showUserMenu)} 
+                className="p-1 rounded-xl transition-all"
+                style={{ background: 'transparent' }}
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-lg sm:text-xl">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-xl">
                   {profile?.avatar_emoji || '😊'}
                 </div>
               </button>
+              
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl p-2 glass border shadow-xl" style={{ borderColor: 'var(--border)' }}>
-                  <div className="px-3 py-2 border-b mb-2" style={{ borderColor: 'var(--border)' }}>
-                    <p className="font-medium" style={{ color: 'var(--text)' }}>{profile?.display_name || profile?.username || 'Kullanıcı'}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>@{profile?.username}</p>
+                <div 
+                  className="absolute right-0 mt-2 w-60 rounded-xl p-2 shadow-2xl z-50" 
+                  style={{ background: 'var(--card)', border: '1px solid var(--border)' }}
+                >
+                  {/* User Info */}
+                  <div className="px-3 py-3 border-b mb-2" style={{ borderColor: 'var(--border)' }}>
+                    <p className="font-semibold" style={{ color: 'var(--text)' }}>
+                      {profile?.display_name || profile?.username || 'Kullanıcı'}
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      @{profile?.username}
+                    </p>
                   </div>
                   
                   {/* Mobile Nav */}
@@ -174,56 +195,55 @@ export default function Header() {
                       <button
                         key={item.id}
                         onClick={() => { setCurrentPage(item.id); setShowUserMenu(false); }}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all"
-                        style={{ color: 'var(--text)' }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all"
+                        style={{ 
+                          background: currentPage === item.id ? 'var(--primary)' : 'transparent',
+                          color: currentPage === item.id ? 'white' : 'var(--text)' 
+                        }}
                       >
                         <span>{item.icon}</span>
-                        <span className="text-sm">{item.label}</span>
+                        <span className="text-sm font-medium">{item.label}</span>
                       </button>
                     ))}
                   </div>
                   
-                  <button
-                    onClick={() => { setShowProfile(true); setShowUserMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all"
+                  {/* Menu Items */}
+                  <button 
+                    onClick={() => { setShowProfile(true); setShowUserMenu(false); }} 
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--surface)] transition-all" 
                     style={{ color: 'var(--text)' }}
                   >
                     <span>👤</span>
-                    <span className="text-sm">{t.profile}</span>
+                    <span className="text-sm font-medium">{t.profile}</span>
                   </button>
-                  <button
-                    onClick={() => { setShowSettings(true); setShowUserMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all"
+                  
+                  <button 
+                    onClick={() => { setShowSettings(true); setShowUserMenu(false); }} 
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--surface)] transition-all" 
                     style={{ color: 'var(--text)' }}
                   >
                     <span>⚙️</span>
-                    <span className="text-sm">{t.settings}</span>
+                    <span className="text-sm font-medium">{t.settings}</span>
                   </button>
-                  <button
-                    onClick={() => { setCurrentPage('privacy'); setShowUserMenu(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--surface-hover)] transition-all"
+                  
+                  <button 
+                    onClick={() => { setCurrentPage('privacy'); setShowUserMenu(false); }} 
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--surface)] transition-all" 
                     style={{ color: 'var(--text)' }}
                   >
                     <span>🔒</span>
-                    <span className="text-sm">{t.privacy}</span>
+                    <span className="text-sm font-medium">{t.privacy}</span>
                   </button>
+                  
+                  {/* Logout */}
                   <div className="border-t mt-2 pt-2" style={{ borderColor: 'var(--border)' }}>
-                    <button
+                    <button 
                       onClick={handleLogout}
-                      disabled={loggingOut}
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/20 transition-all text-red-400 disabled:opacity-50"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-semibold"
+                      style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}
                     >
-                      {loggingOut ? (
-                        <>
-                          <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></span>
-                          <span className="text-sm">{language === 'tr' ? 'Çıkış yapılıyor...' : 'Logging out...'}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>🚪</span>
-                          <span className="text-sm">{t.logout}</span>
-                        </>
-                      )}
+                      <span>🚪</span>
+                      <span className="text-sm">{t.logout}</span>
                     </button>
                   </div>
                 </div>
