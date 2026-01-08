@@ -3,402 +3,600 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useStore } from '@/lib/store';
-import { translations } from '@/lib/translations';
 import { themes } from '@/lib/themes';
 
 export default function AuthScreen() {
-  const { language, toggleLanguage, currentTheme } = useStore();
-  const t = translations[language] || translations.tr;
+  const { setUser, setProfile, currentTheme, language, toggleLanguage } = useStore();
   const theme = themes[currentTheme] || themes.midnight;
   const logoSrc = theme.type === 'dark' ? '/logo-light.png' : '/logo-dark.png';
 
-  const [mode, setMode] = useState('login');
-  const [formData, setFormData] = useState({ email: '', password: '', username: '', confirmPassword: '' });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  // Ekran: login, register, forgot, reset, verified
+  const [screen, setScreen] = useState('login');
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // Form alanları
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Kontroller
+  const [emailExists, setEmailExists] = useState(false);
+  const [usernameExists, setUsernameExists] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState(null);
 
-  // URL kontrolü - email doğrulama ve şifre sıfırlama
+  const t = language === 'tr' ? {
+    login: 'Giriş Yap',
+    register: 'Kayıt Ol',
+    email: 'E-posta',
+    password: 'Şifre',
+    passwordConfirm: 'Şifre Tekrar',
+    username: 'Kullanıcı Adı',
+    forgotPassword: 'Şifremi Unuttum',
+    noAccount: 'Hesabın yok mu?',
+    hasAccount: 'Zaten hesabın var mı?',
+    sendResetLink: 'Sıfırlama Linki Gönder',
+    backToLogin: 'Girişe Dön',
+    resetPassword: 'Şifre Sıfırla',
+    newPassword: 'Yeni Şifre',
+    setNewPassword: 'Yeni Şifreyi Kaydet',
+    emailVerified: 'E-posta Doğrulandı!',
+    canLogin: 'Artık giriş yapabilirsiniz.',
+    // Hatalar
+    emailRequired: 'E-posta gerekli',
+    passwordRequired: 'Şifre gerekli (min 6 karakter)',
+    passwordMismatch: 'Şifreler eşleşmiyor',
+    usernameRequired: 'Kullanıcı adı gerekli (min 3 karakter)',
+    emailInUse: 'Bu e-posta zaten kayıtlı',
+    usernameInUse: 'Bu kullanıcı adı alınmış',
+    invalidCredentials: 'E-posta veya şifre hatalı',
+    emailNotVerified: 'Lütfen e-postanızı doğrulayın',
+    resetLinkSent: 'Sıfırlama linki gönderildi! E-postanızı kontrol edin.',
+    passwordUpdated: 'Şifre güncellendi! Giriş yapabilirsiniz.',
+    registerSuccess: 'Kayıt başarılı! E-postanızı doğrulayın.',
+    unknownError: 'Bir hata oluştu, tekrar deneyin',
+  } : {
+    login: 'Login',
+    register: 'Register',
+    email: 'Email',
+    password: 'Password',
+    passwordConfirm: 'Confirm Password',
+    username: 'Username',
+    forgotPassword: 'Forgot Password',
+    noAccount: "Don't have an account?",
+    hasAccount: 'Already have an account?',
+    sendResetLink: 'Send Reset Link',
+    backToLogin: 'Back to Login',
+    resetPassword: 'Reset Password',
+    newPassword: 'New Password',
+    setNewPassword: 'Set New Password',
+    emailVerified: 'Email Verified!',
+    canLogin: 'You can now login.',
+    emailRequired: 'Email required',
+    passwordRequired: 'Password required (min 6 chars)',
+    passwordMismatch: 'Passwords do not match',
+    usernameRequired: 'Username required (min 3 chars)',
+    emailInUse: 'Email already registered',
+    usernameInUse: 'Username taken',
+    invalidCredentials: 'Invalid email or password',
+    emailNotVerified: 'Please verify your email',
+    resetLinkSent: 'Reset link sent! Check your email.',
+    passwordUpdated: 'Password updated! You can login.',
+    registerSuccess: 'Registered! Please verify your email.',
+    unknownError: 'An error occurred, try again',
+  };
+
+  // URL'den token kontrolü (şifre sıfırlama veya email doğrulama)
   useEffect(() => {
-    const processAuthCallback = async () => {
-      // URL hash veya query params kontrol
-      const hash = window.location.hash;
-      const search = window.location.search;
-      
-      // Hash içinde token var mı?
-      if (hash && hash.includes('access_token')) {
-        const params = new URLSearchParams(hash.substring(1));
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        const type = params.get('type');
-        
-        if (type === 'recovery' && accessToken && refreshToken && supabase) {
-          // Şifre sıfırlama - session ayarla
-          try {
-            await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken
-            });
-            setMode('reset');
-          } catch (err) {
-            console.error('Session error:', err);
-            setError(language === 'tr' ? 'Link geçersiz veya süresi dolmuş.' : 'Invalid or expired link.');
-          }
-        } else if (type === 'signup' || type === 'email' || type === 'magiclink') {
-          // Email doğrulama
-          setMode('verified');
-        }
-        
-        // URL'i temizle
-        window.history.replaceState(null, '', window.location.pathname);
-      }
-      
-      // Error varsa göster
-      if (hash && hash.includes('error')) {
-        const params = new URLSearchParams(hash.substring(1));
-        const errorDesc = params.get('error_description');
-        if (errorDesc) {
-          setError(decodeURIComponent(errorDesc));
-        }
-        window.history.replaceState(null, '', window.location.pathname);
-      }
-    };
+    const hash = window.location.hash;
+    const search = window.location.search;
     
-    processAuthCallback();
-  }, [language]);
+    // Email doğrulama başarılı
+    if (hash.includes('type=signup') || search.includes('type=signup')) {
+      setScreen('verified');
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    // Şifre sıfırlama
+    else if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+      setScreen('reset');
+      // Token'ı Supabase'e ver
+      const params = new URLSearchParams(hash.replace('#', '') || search.replace('?', ''));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      
+      if (accessToken) {
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        }).catch(console.error);
+      }
+    }
+  }, []);
 
+  // Email kontrolü (register sırasında)
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    document.body.style.background = theme.colors.background;
-  }, [currentTheme, theme]);
-
-  // Kullanıcı adı kontrolü
-  useEffect(() => {
-    if (mode !== 'register' || !formData.username || formData.username.length < 3) {
-      setUsernameAvailable(null);
+    if (screen !== 'register' || !email || !email.includes('@')) {
+      setEmailExists(false);
       return;
     }
+    
+    const timer = setTimeout(async () => {
+      setCheckingEmail(true);
+      try {
+        const { data } = await supabase.from('profiles').select('id').eq('email', email.toLowerCase()).single();
+        setEmailExists(!!data);
+      } catch {
+        setEmailExists(false);
+      }
+      setCheckingEmail(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [email, screen]);
 
+  // Username kontrolü
+  useEffect(() => {
+    if (screen !== 'register' || !username || username.length < 3) {
+      setUsernameExists(false);
+      return;
+    }
+    
     const timer = setTimeout(async () => {
       setCheckingUsername(true);
       try {
-        if (supabase) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('username', formData.username.toLowerCase())
-            .maybeSingle();
-          setUsernameAvailable(!data);
-        } else {
-          setUsernameAvailable(true);
-        }
+        const { data } = await supabase.from('profiles').select('id').eq('username', username.toLowerCase()).single();
+        setUsernameExists(!!data);
       } catch {
-        setUsernameAvailable(true);
+        setUsernameExists(false);
       }
       setCheckingUsername(false);
-    }, 600);
-
+    }, 500);
+    
     return () => clearTimeout(timer);
-  }, [formData.username, mode]);
+  }, [username, screen]);
 
-  const getErrorMessage = (err) => {
-    const msg = err?.message?.toLowerCase() || '';
-    if (msg.includes('already registered') || msg.includes('already exists')) return language === 'tr' ? '⚠️ Bu e-posta zaten kayıtlı.' : '⚠️ Email already registered.';
-    if (msg.includes('invalid login') || msg.includes('invalid credentials')) return language === 'tr' ? '⚠️ E-posta veya şifre hatalı.' : '⚠️ Invalid email or password.';
-    if (msg.includes('email not confirmed')) return language === 'tr' ? '⚠️ E-postanızı doğrulayın.' : '⚠️ Please verify your email.';
-    if (msg.includes('password') && msg.includes('6')) return language === 'tr' ? '⚠️ Şifre en az 6 karakter.' : '⚠️ Password min 6 characters.';
-    if (msg.includes('rate limit')) return language === 'tr' ? '⚠️ Çok fazla deneme. Bekleyin.' : '⚠️ Too many attempts. Wait.';
-    if (msg.includes('expired') || msg.includes('invalid')) return language === 'tr' ? '⚠️ Link geçersiz veya süresi dolmuş.' : '⚠️ Invalid or expired link.';
-    return language === 'tr' ? '⚠️ Bir hata oluştu.' : '⚠️ An error occurred.';
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setError(''); setSuccess('');
-    
-    if (formData.password.length < 6) { setError(language === 'tr' ? '⚠️ Şifre en az 6 karakter.' : '⚠️ Min 6 characters.'); return; }
-    if (formData.password !== formData.confirmPassword) { setError(language === 'tr' ? '⚠️ Şifreler eşleşmiyor.' : '⚠️ Passwords don\'t match.'); return; }
-    if (usernameAvailable === false) { setError(language === 'tr' ? '⚠️ Kullanıcı adı alınmış.' : '⚠️ Username taken.'); return; }
-    
-    setLoading(true);
-    try {
-      if (!supabase) throw new Error('Not configured');
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: { 
-          data: { username: formData.username.toLowerCase() },
-          emailRedirectTo: window.location.origin
-        }
-      });
-      if (error) throw error;
-      if (data?.user && !data?.session) {
-        setSuccess(language === 'tr' ? '🎉 Kayıt başarılı! E-postanızı kontrol edin.' : '🎉 Success! Check your email.');
-        setFormData({ email: '', password: '', username: '', confirmPassword: '' });
-      }
-    } catch (err) { setError(getErrorMessage(err)); }
-    finally { setLoading(false); }
-  };
-
+  // GİRİŞ
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
-    if (!formData.email || !formData.password) { setError(language === 'tr' ? '⚠️ Tüm alanları doldurun.' : '⚠️ Fill all fields.'); return; }
+    setMessage({ type: '', text: '' });
+    
+    if (!email) return setMessage({ type: 'error', text: t.emailRequired });
+    if (!password || password.length < 6) return setMessage({ type: 'error', text: t.passwordRequired });
+    
     setLoading(true);
     try {
-      if (!supabase) throw new Error('Not configured');
-      const { error } = await supabase.auth.signInWithPassword({ email: formData.email, password: formData.password });
-      if (error) throw error;
-    } catch (err) { setError(getErrorMessage(err)); }
-    finally { setLoading(false); }
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        if (error.message.includes('Invalid login')) {
+          setMessage({ type: 'error', text: t.invalidCredentials });
+        } else if (error.message.includes('Email not confirmed')) {
+          setMessage({ type: 'error', text: t.emailNotVerified });
+        } else {
+          setMessage({ type: 'error', text: t.unknownError });
+        }
+        setLoading(false);
+        return;
+      }
+      
+      if (data.user) {
+        setUser(data.user);
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+        if (profile) setProfile(profile);
+      }
+    } catch {
+      setMessage({ type: 'error', text: t.unknownError });
+    }
+    setLoading(false);
   };
 
+  // KAYIT
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setMessage({ type: '', text: '' });
+    
+    if (!email || !email.includes('@')) return setMessage({ type: 'error', text: t.emailRequired });
+    if (!username || username.length < 3) return setMessage({ type: 'error', text: t.usernameRequired });
+    if (!password || password.length < 6) return setMessage({ type: 'error', text: t.passwordRequired });
+    if (password !== passwordConfirm) return setMessage({ type: 'error', text: t.passwordMismatch });
+    if (emailExists) return setMessage({ type: 'error', text: t.emailInUse });
+    if (usernameExists) return setMessage({ type: 'error', text: t.usernameInUse });
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username: username.toLowerCase(), display_name: username },
+          emailRedirectTo: `${window.location.origin}?type=signup`
+        }
+      });
+      
+      if (error) {
+        if (error.message.includes('already registered')) {
+          setMessage({ type: 'error', text: t.emailInUse });
+        } else {
+          setMessage({ type: 'error', text: t.unknownError });
+        }
+        setLoading(false);
+        return;
+      }
+      
+      if (data.user) {
+        // Profile oluştur
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          email: email.toLowerCase(),
+          username: username.toLowerCase(),
+          display_name: username,
+          avatar_emoji: '😊',
+          created_at: new Date().toISOString()
+        });
+        
+        setMessage({ type: 'success', text: t.registerSuccess });
+        setTimeout(() => setScreen('login'), 3000);
+      }
+    } catch {
+      setMessage({ type: 'error', text: t.unknownError });
+    }
+    setLoading(false);
+  };
+
+  // ŞİFREMİ UNUTTUM
   const handleForgotPassword = async (e) => {
     e.preventDefault();
-    setError(''); setSuccess('');
-    if (!formData.email.includes('@')) { setError(language === 'tr' ? '⚠️ Geçerli e-posta girin.' : '⚠️ Enter valid email.'); return; }
+    setMessage({ type: '', text: '' });
+    
+    if (!email || !email.includes('@')) return setMessage({ type: 'error', text: t.emailRequired });
+    
     setLoading(true);
     try {
-      if (!supabase) throw new Error('Not configured');
-      
-      // Redirect URL - tam site URL'i kullan
-      const redirectUrl = window.location.origin;
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: redirectUrl,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}?type=recovery`
       });
-      if (error) throw error;
-      setSuccess(language === 'tr' ? '📧 Şifre sıfırlama linki gönderildi! E-postanızı kontrol edin.' : '📧 Reset link sent! Check your email.');
-    } catch (err) { setError(getErrorMessage(err)); }
-    finally { setLoading(false); }
+      
+      if (error) {
+        setMessage({ type: 'error', text: t.unknownError });
+      } else {
+        setMessage({ type: 'success', text: t.resetLinkSent });
+      }
+    } catch {
+      setMessage({ type: 'error', text: t.unknownError });
+    }
+    setLoading(false);
   };
 
+  // YENİ ŞİFRE KAYDET
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    setError(''); setSuccess('');
-    if (formData.password.length < 6) { setError(language === 'tr' ? '⚠️ Şifre en az 6 karakter.' : '⚠️ Min 6 characters.'); return; }
-    if (formData.password !== formData.confirmPassword) { setError(language === 'tr' ? '⚠️ Şifreler eşleşmiyor.' : '⚠️ Passwords don\'t match.'); return; }
+    setMessage({ type: '', text: '' });
+    
+    if (!password || password.length < 6) return setMessage({ type: 'error', text: t.passwordRequired });
+    if (password !== passwordConfirm) return setMessage({ type: 'error', text: t.passwordMismatch });
+    
     setLoading(true);
     try {
-      if (!supabase) throw new Error('Not configured');
-      const { error } = await supabase.auth.updateUser({ password: formData.password });
-      if (error) throw error;
-      setSuccess(language === 'tr' ? '✅ Şifre güncellendi! Giriş yapabilirsiniz.' : '✅ Password updated!');
+      const { error } = await supabase.auth.updateUser({ password });
       
-      // Oturumu kapat ve login'e yönlendir
-      setTimeout(async () => {
+      if (error) {
+        setMessage({ type: 'error', text: t.unknownError });
+      } else {
+        setMessage({ type: 'success', text: t.passwordUpdated });
         await supabase.auth.signOut();
-        setMode('login');
-        setFormData({ email: '', password: '', username: '', confirmPassword: '' });
-      }, 2000);
-    } catch (err) { setError(getErrorMessage(err)); }
-    finally { setLoading(false); }
+        setTimeout(() => {
+          setScreen('login');
+          window.history.replaceState(null, '', window.location.pathname);
+        }, 2000);
+      }
+    } catch {
+      setMessage({ type: 'error', text: t.unknownError });
+    }
+    setLoading(false);
   };
 
-  const changeMode = (newMode) => {
-    setMode(newMode); setError(''); setSuccess('');
-    setFormData({ email: '', password: '', username: '', confirmPassword: '' });
-    setUsernameAvailable(null);
+  // Form temizle
+  const switchScreen = (newScreen) => {
+    setScreen(newScreen);
+    setMessage({ type: '', text: '' });
+    setPassword('');
+    setPasswordConfirm('');
   };
 
-  // Doğrulama ekranı
-  if (mode === 'verified') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: theme.colors.background }}>
-        <div className="w-full max-w-md text-center">
-          <div className="card p-8">
-            <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
-              <span className="text-6xl">✅</span>
-            </div>
-            <h1 className="text-2xl font-bold mb-3" style={{ color: theme.colors.text }}>
-              {language === 'tr' ? 'E-posta Doğrulandı!' : 'Email Verified!'}
-            </h1>
-            <p className="mb-6" style={{ color: theme.colors.textMuted }}>
-              {language === 'tr' ? 'Artık giriş yapabilirsiniz.' : 'You can now login.'}
-            </p>
-            <button onClick={() => changeMode('login')} className="w-full btn-primary py-3 text-lg">
-              🚀 {language === 'tr' ? 'Giriş Yap' : 'Login'}
-            </button>
-          </div>
-          <img src={logoSrc} alt="Pomonero" className="h-12 sm:h-14 md:h-16 mx-auto mt-8 opacity-50" />
-        </div>
-      </div>
-    );
-  }
-
-  // Şifre sıfırlama ekranı
-  if (mode === 'reset') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: theme.colors.background }}>
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <img src={logoSrc} alt="Pomonero" className="h-14 sm:h-16 md:h-20 mx-auto mb-4" />
-          </div>
-          <div className="card p-8">
-            <div className="text-center mb-6">
-              <span className="text-5xl mb-4 block">🔐</span>
-              <h2 className="text-xl font-bold" style={{ color: theme.colors.text }}>
-                {language === 'tr' ? 'Yeni Şifre Belirle' : 'Set New Password'}
-              </h2>
-            </div>
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>🔒 {language === 'tr' ? 'Yeni Şifre' : 'New Password'}</label>
-                <input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="input-modern" placeholder="••••••••" required minLength={6} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>🔒 {language === 'tr' ? 'Tekrar' : 'Confirm'}</label>
-                <input type={showPassword ? 'text' : 'password'} value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} className="input-modern" placeholder="••••••••" required minLength={6} />
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
-                <span className="text-sm" style={{ color: theme.colors.textMuted }}>{language === 'tr' ? 'Şifreyi göster' : 'Show password'}</span>
-              </label>
-              {error && <div className="p-3 rounded-xl text-sm bg-red-500/20 text-red-400">{error}</div>}
-              {success && <div className="p-3 rounded-xl text-sm bg-green-500/20 text-green-400">{success}</div>}
-              <button type="submit" disabled={loading} className="w-full btn-primary py-3 disabled:opacity-50">
-                {loading ? '...' : '✅ ' + (language === 'tr' ? 'Şifreyi Güncelle' : 'Update Password')}
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Şifremi unuttum
-  if (mode === 'forgot') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: theme.colors.background }}>
-        <div className="w-full max-w-md">
-          <div className="flex justify-end mb-4">
-            <button onClick={toggleLanguage} className="px-4 py-2 rounded-xl text-sm" style={{ background: theme.colors.surface, color: theme.colors.text }}>
-              {language === 'tr' ? '🇹🇷' : '🇬🇧'}
-            </button>
-          </div>
-          <div className="text-center mb-8">
-            <img src={logoSrc} alt="Pomonero" className="h-14 sm:h-16 md:h-20 mx-auto mb-4" />
-          </div>
-          <div className="card p-8">
-            <div className="text-center mb-6">
-              <span className="text-5xl mb-4 block">🔑</span>
-              <h2 className="text-xl font-bold" style={{ color: theme.colors.text }}>{language === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password'}</h2>
-              <p className="text-sm mt-2" style={{ color: theme.colors.textMuted }}>
-                {language === 'tr' ? 'E-posta adresinize sıfırlama linki göndereceğiz' : 'We will send a reset link to your email'}
-              </p>
-            </div>
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>✉️ E-posta</label>
-                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input-modern" placeholder="email@example.com" required />
-              </div>
-              {error && <div className="p-3 rounded-xl text-sm bg-red-500/20 text-red-400">{error}</div>}
-              {success && <div className="p-3 rounded-xl text-sm bg-green-500/20 text-green-400">{success}</div>}
-              <button type="submit" disabled={loading} className="w-full btn-primary py-3 disabled:opacity-50">
-                {loading ? '...' : '📧 ' + (language === 'tr' ? 'Sıfırlama Linki Gönder' : 'Send Reset Link')}
-              </button>
-            </form>
-            <p className="text-center mt-6">
-              <button onClick={() => changeMode('login')} className="text-sm font-medium" style={{ color: theme.colors.primary }}>← {language === 'tr' ? 'Giriş sayfasına dön' : 'Back to login'}</button>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Ana giriş/kayıt
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: theme.colors.background }}>
-      <div className="w-full max-w-md">
-        <div className="flex justify-end mb-4">
-          <button onClick={toggleLanguage} className="px-4 py-2 rounded-xl text-sm font-medium" style={{ background: theme.colors.surface, color: theme.colors.text }}>
-            {language === 'tr' ? '🇹🇷 Türkçe' : '🇬🇧 English'}
-          </button>
-        </div>
-
-        <div className="text-center mb-8">
-          <img src={logoSrc} alt="Pomonero" className="h-14 sm:h-16 md:h-20 lg:h-24 mx-auto mb-4" />
-          <p style={{ color: theme.colors.textMuted }}>{t.slogan}</p>
-        </div>
-
-        <div className="card p-8">
-          <div className="flex gap-2 mb-6 p-1 rounded-xl" style={{ background: theme.colors.background }}>
-            <button onClick={() => changeMode('login')} className="flex-1 py-3 rounded-lg font-semibold transition-all" style={{ background: mode === 'login' ? theme.colors.primary : 'transparent', color: mode === 'login' ? 'white' : theme.colors.textMuted }}>{t.login}</button>
-            <button onClick={() => changeMode('register')} className="flex-1 py-3 rounded-lg font-semibold transition-all" style={{ background: mode === 'register' ? theme.colors.primary : 'transparent', color: mode === 'register' ? 'white' : theme.colors.textMuted }}>{t.register}</button>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: theme.colors.background }}>
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {['🍅', '⏰', '📚', '☕', '🎯', '⭐', '🎮', '🌙'].map((emoji, i) => (
+          <div
+            key={i}
+            className="absolute text-4xl opacity-20 animate-float"
+            style={{
+              left: `${10 + i * 12}%`,
+              top: `${20 + (i % 3) * 25}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${4 + i % 3}s`
+            }}
+          >
+            {emoji}
           </div>
-
-          {success && <div className="mb-4 p-4 rounded-xl text-sm bg-green-500/20 text-green-400">{success}</div>}
-
-          {mode === 'login' && (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>✉️ {t.email}</label>
-                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input-modern" placeholder="email@example.com" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>🔒 {t.password}</label>
-                <div className="relative">
-                  <input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="input-modern pr-12" placeholder="••••••••" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-lg">{showPassword ? '🙈' : '👁️'}</button>
-                </div>
-              </div>
-              <div className="text-right">
-                <button type="button" onClick={() => changeMode('forgot')} className="text-sm font-medium" style={{ color: theme.colors.primary }}>🔑 {language === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password'}</button>
-              </div>
-              {error && <div className="p-3 rounded-xl text-sm bg-red-500/20 text-red-400">{error}</div>}
-              <button type="submit" disabled={loading} className="w-full btn-primary py-3 disabled:opacity-50">
-                {loading ? '...' : '🚀 ' + t.login}
-              </button>
-            </form>
-          )}
-
-          {mode === 'register' && (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>👤 {t.username}</label>
-                <div className="relative">
-                  <input type="text" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })} className="input-modern pr-10" placeholder="kullanici_adi" minLength={3} maxLength={20} required />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                    {checkingUsername && <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block"></span>}
-                    {!checkingUsername && usernameAvailable === true && formData.username.length >= 3 && <span className="text-green-500 text-lg">✓</span>}
-                    {!checkingUsername && usernameAvailable === false && <span className="text-red-500 text-lg">✗</span>}
-                  </span>
-                </div>
-                {usernameAvailable === false && <p className="text-xs text-red-400 mt-1">{language === 'tr' ? 'Bu kullanıcı adı alınmış' : 'Username taken'}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>✉️ {t.email}</label>
-                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="input-modern" placeholder="email@example.com" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>🔒 {t.password}</label>
-                <input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="input-modern" placeholder="••••••••" required minLength={6} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: theme.colors.text }}>🔒 {language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'}</label>
-                <input type={showPassword ? 'text' : 'password'} value={formData.confirmPassword} onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })} className="input-modern" placeholder="••••••••" required minLength={6} />
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
-                <span className="text-sm" style={{ color: theme.colors.textMuted }}>{language === 'tr' ? 'Şifreleri göster' : 'Show passwords'}</span>
-              </label>
-              {error && <div className="p-3 rounded-xl text-sm bg-red-500/20 text-red-400">{error}</div>}
-              <button type="submit" disabled={loading || usernameAvailable === false || checkingUsername} className="w-full btn-primary py-3 disabled:opacity-50">
-                {loading ? '...' : '✨ ' + t.register}
-              </button>
-            </form>
-          )}
-
-          <p className="text-center mt-6 text-sm" style={{ color: theme.colors.textMuted }}>
-            {mode === 'login' ? t.noAccount : t.hasAccount}{' '}
-            <button onClick={() => changeMode(mode === 'login' ? 'register' : 'login')} className="font-semibold" style={{ color: theme.colors.primary }}>{mode === 'login' ? t.register : t.login}</button>
-          </p>
-        </div>
+        ))}
       </div>
+
+      {/* Language Toggle */}
+      <button
+        onClick={toggleLanguage}
+        className="absolute top-4 right-4 p-2 rounded-lg text-2xl hover:scale-110 transition-transform z-10"
+      >
+        {language === 'tr' ? '🇹🇷' : '🇬🇧'}
+      </button>
+
+      {/* Card */}
+      <div className="w-full max-w-md rounded-2xl p-8 shadow-2xl relative z-10 animate-fadeIn" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+        
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <img src={logoSrc} alt="Pomonero" className="h-16 mx-auto mb-4" />
+        </div>
+
+        {/* EMAIL DOĞRULANDI */}
+        {screen === 'verified' && (
+          <div className="text-center py-8">
+            <div className="text-6xl mb-4 animate-bounce">✅</div>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>{t.emailVerified}</h2>
+            <p className="mb-6" style={{ color: 'var(--text-muted)' }}>{t.canLogin}</p>
+            <button onClick={() => switchScreen('login')} className="w-full py-3 rounded-xl font-semibold text-white" style={{ background: 'var(--primary)' }}>
+              {t.login}
+            </button>
+          </div>
+        )}
+
+        {/* GİRİŞ */}
+        {screen === 'login' && (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <h2 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--text)' }}>{t.login}</h2>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.email}</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-3 rounded-xl outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                placeholder="ornek@email.com"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.password}</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3 rounded-xl outline-none pr-12 transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  placeholder="••••••"
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xl">
+                  {showPassword ? '👁️' : '🔒'}
+                </button>
+              </div>
+            </div>
+            
+            <button type="button" onClick={() => switchScreen('forgot')} className="text-sm hover:underline" style={{ color: 'var(--primary)' }}>
+              {t.forgotPassword}
+            </button>
+            
+            {message.text && (
+              <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                {message.text}
+              </div>
+            )}
+            
+            <button type="submit" disabled={loading} className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] disabled:opacity-50" style={{ background: 'var(--primary)' }}>
+              {loading ? '...' : t.login}
+            </button>
+            
+            <p className="text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+              {t.noAccount}{' '}
+              <button type="button" onClick={() => switchScreen('register')} className="font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+                {t.register}
+              </button>
+            </p>
+          </form>
+        )}
+
+        {/* KAYIT */}
+        {screen === 'register' && (
+          <form onSubmit={handleRegister} className="space-y-4">
+            <h2 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--text)' }}>{t.register}</h2>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.email}</label>
+              <div className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 rounded-xl outline-none pr-10 transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                  style={{ background: 'var(--surface)', border: `1px solid ${emailExists ? '#ef4444' : 'var(--border)'}`, color: 'var(--text)' }}
+                  placeholder="ornek@email.com"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {checkingEmail ? '⏳' : emailExists ? '❌' : email.includes('@') ? '✅' : ''}
+                </span>
+              </div>
+              {emailExists && <p className="text-xs text-red-400 mt-1">{t.emailInUse}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.username}</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  className="w-full p-3 rounded-xl outline-none pr-10 transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                  style={{ background: 'var(--surface)', border: `1px solid ${usernameExists ? '#ef4444' : 'var(--border)'}`, color: 'var(--text)' }}
+                  placeholder="kullaniciadi"
+                  maxLength={20}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {checkingUsername ? '⏳' : usernameExists ? '❌' : username.length >= 3 ? '✅' : ''}
+                </span>
+              </div>
+              {usernameExists && <p className="text-xs text-red-400 mt-1">{t.usernameInUse}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.password}</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 rounded-xl outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                placeholder="••••••"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.passwordConfirm}</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                className="w-full p-3 rounded-xl outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                style={{ background: 'var(--surface)', border: `1px solid ${passwordConfirm && password !== passwordConfirm ? '#ef4444' : 'var(--border)'}`, color: 'var(--text)' }}
+                placeholder="••••••"
+              />
+            </div>
+            
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={showPassword} onChange={() => setShowPassword(!showPassword)} className="rounded" />
+              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{language === 'tr' ? 'Şifreyi göster' : 'Show password'}</span>
+            </label>
+            
+            {message.text && (
+              <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                {message.text}
+              </div>
+            )}
+            
+            <button type="submit" disabled={loading || emailExists || usernameExists} className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] disabled:opacity-50" style={{ background: 'var(--primary)' }}>
+              {loading ? '...' : t.register}
+            </button>
+            
+            <p className="text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+              {t.hasAccount}{' '}
+              <button type="button" onClick={() => switchScreen('login')} className="font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+                {t.login}
+              </button>
+            </p>
+          </form>
+        )}
+
+        {/* ŞİFREMİ UNUTTUM */}
+        {screen === 'forgot' && (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <h2 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--text)' }}>{t.forgotPassword}</h2>
+            <p className="text-center text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              {language === 'tr' ? 'E-posta adresinizi girin, size şifre sıfırlama linki gönderelim.' : 'Enter your email and we will send you a reset link.'}
+            </p>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.email}</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-3 rounded-xl outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                placeholder="ornek@email.com"
+              />
+            </div>
+            
+            {message.text && (
+              <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                {message.text}
+              </div>
+            )}
+            
+            <button type="submit" disabled={loading} className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] disabled:opacity-50" style={{ background: 'var(--primary)' }}>
+              {loading ? '...' : t.sendResetLink}
+            </button>
+            
+            <button type="button" onClick={() => switchScreen('login')} className="w-full py-2 text-sm hover:underline" style={{ color: 'var(--text-muted)' }}>
+              ← {t.backToLogin}
+            </button>
+          </form>
+        )}
+
+        {/* YENİ ŞİFRE BELİRLE */}
+        {screen === 'reset' && (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <h2 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--text)' }}>{t.resetPassword}</h2>
+            <div className="text-center text-4xl mb-4">🔐</div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.newPassword}</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 rounded-xl outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                placeholder="••••••"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{t.passwordConfirm}</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+                className="w-full p-3 rounded-xl outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                placeholder="••••••"
+              />
+            </div>
+            
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={showPassword} onChange={() => setShowPassword(!showPassword)} className="rounded" />
+              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{language === 'tr' ? 'Şifreyi göster' : 'Show password'}</span>
+            </label>
+            
+            {message.text && (
+              <div className={`p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                {message.text}
+              </div>
+            )}
+            
+            <button type="submit" disabled={loading} className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] disabled:opacity-50" style={{ background: 'var(--primary)' }}>
+              {loading ? '...' : t.setNewPassword}
+            </button>
+          </form>
+        )}
+      </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(10deg); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+      `}</style>
     </div>
   );
 }

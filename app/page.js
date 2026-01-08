@@ -16,7 +16,7 @@ import LiveClock from '@/components/LiveClock';
 import Weather from '@/components/Weather';
 import Radio from '@/components/Radio';
 import DailyInfo from '@/components/DailyInfo';
-import AdSpace from '@/components/AdSpace';
+import AdSpace, { HorizontalAd, VerticalAd, BillboardAd } from '@/components/AdSpace';
 import GameModal from '@/components/GameModal';
 import Settings from '@/components/Settings';
 import Profile from '@/components/Profile';
@@ -54,12 +54,8 @@ export default function Home() {
         const user = await auth.getUser();
         if (user) {
           setUser(user);
-          
-          // Profile'ı al
           const { data: profileData } = await db.getProfile(user.id);
           if (profileData) setProfile(profileData);
-          
-          // Stats ve leaderboard arka planda yükle
           db.getUserStats(user.id).then(stats => setStats(stats)).catch(() => {});
           db.getLeaderboard().then(({ data }) => data && setLeaderboard(data)).catch(() => {});
         }
@@ -69,14 +65,9 @@ export default function Home() {
       setLoading(false);
     };
     
-    // 3 saniye timeout - eğer Supabase yanıt vermezse loading'i kapat
-    timeoutId = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
-    
+    timeoutId = setTimeout(() => setLoading(false), 3000);
     checkUser();
 
-    // Auth state değişikliklerini dinle
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user);
@@ -95,75 +86,144 @@ export default function Home() {
     };
   }, []);
 
-  // Henüz mount olmadıysa boş döndür
   if (!mounted) return null;
 
-  // Loading ekranı
+  // Loading
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: theme.colors.background }}>
-        <div className="text-center">
-          <img src="/logo.png" alt="Pomonero" className="h-14 mx-auto mb-4" />
-          <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <div className="text-center animate-fadeIn">
+          <img src="/logo.png" alt="Pomonero" className="h-20 mx-auto mb-6 animate-pulse" />
+          <div className="w-10 h-10 border-3 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto" />
         </div>
       </div>
     );
   }
 
-  // Giriş yapılmamışsa auth ekranı
+  // Auth
   if (!user) return <AuthScreen />;
 
   // Sayfa render
   const renderPage = () => {
     switch (currentPage) {
-      case 'pomodoro': return <PomodoroPage />;
-      case 'about': return <AboutPage />;
-      case 'contact': return <ContactPage />;
-      case 'support': return <SupportPage />;
-      case 'privacy': return <PrivacyPage />;
-      default: return (
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          {/* MOBİL - Timer en üstte */}
-          <div className="lg:hidden space-y-4">
-            <Timer />
-            <DailyInfo />
-            <Stats />
-            <Weather />
-            <Radio />
-            <Calendar />
-            <Leaderboard />
+      case 'pomodoro': 
+        return (
+          <div className="space-y-6">
+            <HorizontalAd />
+            <PomodoroPage />
+            <BillboardAd />
           </div>
-
-          {/* DESKTOP - 3 kolon */}
-          <div className="hidden lg:grid lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-3 space-y-6">
-              <LiveClock />
-              <Weather />
-              <Radio />
-              <AdSpace size="square" />
+        );
+      case 'about': 
+        return (
+          <div className="space-y-6">
+            <HorizontalAd />
+            <AboutPage />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AdSpace size="mediumRectangle" />
+              <AdSpace size="mediumRectangle" />
             </div>
-            <div className="lg:col-span-6 space-y-6">
+          </div>
+        );
+      case 'contact': 
+        return (
+          <div className="space-y-6">
+            <ContactPage />
+            <HorizontalAd />
+          </div>
+        );
+      case 'support': 
+        return (
+          <div className="space-y-6">
+            <HorizontalAd />
+            <SupportPage />
+            <AdSpace size="largeRectangle" className="max-w-md mx-auto" />
+          </div>
+        );
+      case 'privacy': 
+        return (
+          <div className="space-y-6">
+            <PrivacyPage />
+            <HorizontalAd />
+          </div>
+        );
+      default: 
+        return (
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            {/* Üst Reklam - Mobil ve Desktop */}
+            <div className="mb-6">
+              <HorizontalAd className="hidden md:flex" />
+              <AdSpace size="largeBanner" className="md:hidden" />
+            </div>
+
+            {/* MOBİL LAYOUT */}
+            <div className="lg:hidden space-y-4">
               <Timer />
               <DailyInfo />
-              <Calendar />
-            </div>
-            <div className="lg:col-span-3 space-y-6">
+              <AdSpace size="mediumRectangle" />
               <Stats />
+              <Weather />
+              <Radio />
+              <AdSpace size="largeBanner" />
+              <Calendar />
               <Leaderboard />
+              <AdSpace size="mediumRectangle" />
+            </div>
+
+            {/* DESKTOP LAYOUT - 3 kolon */}
+            <div className="hidden lg:grid lg:grid-cols-12 gap-6">
+              {/* Sol Kolon */}
+              <div className="lg:col-span-3 space-y-6">
+                <LiveClock />
+                <Weather />
+                <Radio />
+                <AdSpace size="square" />
+                <VerticalAd />
+              </div>
+              
+              {/* Orta Kolon */}
+              <div className="lg:col-span-6 space-y-6">
+                <Timer />
+                <DailyInfo />
+                <AdSpace size="leaderboard" />
+                <Calendar />
+                <BillboardAd />
+              </div>
+              
+              {/* Sağ Kolon */}
+              <div className="lg:col-span-3 space-y-6">
+                <Stats />
+                <Leaderboard />
+                <AdSpace size="mediumRectangle" />
+                <AdSpace size="square" />
+              </div>
+            </div>
+
+            {/* Alt Reklam */}
+            <div className="mt-6">
+              <BillboardAd className="hidden md:flex" />
+              <AdSpace size="largeBanner" className="md:hidden" />
             </div>
           </div>
-        </div>
-      );
+        );
     }
   };
 
   return (
-    <div className="min-h-screen" style={{ background: theme.colors.background }}>
+    <div className="min-h-screen transition-colors duration-500" style={{ background: theme.colors.background }}>
       <Header />
-      <main className="pb-8">{renderPage()}</main>
+      <main className="pb-8 animate-fadeIn">{renderPage()}</main>
       <GameModal />
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
-      {showProfile && <Profile onClose={() => setShowProfile(false)} />}
+      {showProfile && <Profile />}
+      
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
+      `}</style>
     </div>
   );
 }
