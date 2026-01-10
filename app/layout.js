@@ -76,7 +76,7 @@ export const metadata = {
   },
 };
 
-// JSON-LD Schema
+// JSON-LD Schema - WebApplication
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
@@ -85,9 +85,11 @@ const jsonLd = {
   url: 'https://www.pomonero.com',
   logo: 'https://www.pomonero.com/logo-dark.png',
   image: 'https://www.pomonero.com/logo-dark.png',
-  description: 'Modern pomodoro zamanlayıcı uygulaması. Odaklanın, verimli çalışın ve başarın.',
+  description: 'Modern pomodoro zamanlayıcı uygulaması. Odaklanın, verimli çalışın ve başarın. TYT ve AYT sınav modları ile öğrencilere özel.',
   applicationCategory: 'ProductivityApplication',
   operatingSystem: 'Web',
+  browserRequirements: 'Requires JavaScript. Requires HTML5.',
+  softwareVersion: '2.2.0',
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -96,12 +98,41 @@ const jsonLd = {
   aggregateRating: {
     '@type': 'AggregateRating',
     ratingValue: '4.8',
-    ratingCount: '150',
+    ratingCount: '250',
+    bestRating: '5',
+    worstRating: '1',
   },
   author: {
     '@type': 'Organization',
     name: 'Pomonero',
     url: 'https://www.pomonero.com',
+  },
+  featureList: [
+    'Pomodoro Zamanlayıcı',
+    'TYT Sınav Modu (120 dakika)',
+    'AYT Sınav Modu (165 dakika)',
+    'Mola Oyunları',
+    'İstatistikler',
+    'Liderlik Tablosu',
+    '8 Farklı Tema',
+    'Türkçe ve İngilizce Dil Desteği',
+  ],
+};
+
+// WebSite Schema - Google Sitelinks için
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Pomonero',
+  alternateName: 'Pomonero - Pomodoro Zamanlayıcı',
+  url: 'https://www.pomonero.com',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://www.pomonero.com/?search={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
   },
 };
 
@@ -117,7 +148,45 @@ const organizationSchema = {
     width: 512,
     height: 512,
   },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'info@pomonero.com',
+    contactType: 'customer service',
+    availableLanguage: ['Turkish', 'English'],
+  },
   sameAs: [],
+};
+
+// FAQ Schema - Google'da SSS görünümü için
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'Pomodoro tekniği nedir?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Pomodoro tekniği, 25 dakikalık odaklanma seansları ve 5 dakikalık molalardan oluşan bir zaman yönetimi metodudur. Her 4 seanstan sonra 15-30 dakikalık uzun mola verilir.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Pomonero ücretsiz mi?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Evet, Pomonero tamamen ücretsizdir. Tüm özellikler (zamanlayıcı, oyunlar, istatistikler, temalar) ücretsiz olarak kullanılabilir.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'TYT ve AYT modları ne işe yarar?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'TYT modu 120 dakika (2 saat), AYT modu 165 dakika (2 saat 45 dakika) sürer. Bu modlar gerçek sınav sürelerini simüle ederek öğrencilerin pratik yapmasına yardımcı olur.',
+      },
+    },
+  ],
 };
 
 export default function RootLayout({ children }) {
@@ -140,7 +209,15 @@ export default function RootLayout({ children }) {
         />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       </head>
       <body className="min-h-screen">

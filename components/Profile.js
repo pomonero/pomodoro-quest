@@ -57,31 +57,62 @@ export default function Profile() {
       // 2. Store'u güncelle
       setProfile(newProfile);
 
-      // 3. Supabase'e kaydet (varsa)
+      // 3. Supabase'e kaydet (varsa ve user varsa)
+      let supabaseSuccess = false;
       if (supabase && user?.id) {
-        const { error } = await supabase
-          .from('profiles')
-          .upsert({
-            id: user.id,
-            display_name: displayName.trim(),
-            avatar_emoji: avatarEmoji,
-            username: profile?.username || user.email?.split('@')[0],
-            email: user.email,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
+        try {
+          // Önce mevcut profili kontrol et
+          const { data: existing } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', user.id)
+            .single();
 
-        if (error) {
-          console.error('Supabase save error:', error);
-          // Ama local'e kaydettik, sorun değil
+          if (existing) {
+            // Update
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({
+                display_name: displayName.trim(),
+                avatar_emoji: avatarEmoji,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', user.id);
+
+            if (!updateError) supabaseSuccess = true;
+            else console.log('Update error:', updateError.message);
+          } else {
+            // Insert
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: user.id,
+                display_name: displayName.trim(),
+                avatar_emoji: avatarEmoji,
+                username: profile?.username || user.email?.split('@')[0],
+                email: user.email,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              });
+
+            if (!insertError) supabaseSuccess = true;
+            else console.log('Insert error:', insertError.message);
+          }
+        } catch (dbErr) {
+          console.log('DB error:', dbErr);
         }
       }
 
-      setMessage({ type: 'success', text: tr ? '✅ Kaydedildi!' : '✅ Saved!' });
-      setTimeout(() => setMessage({ type: '', text: '' }), 2000);
+      // Mesaj göster
+      if (supabaseSuccess) {
+        setMessage({ type: 'success', text: tr ? '✅ Kaydedildi! (Sunucu + Yerel)' : '✅ Saved! (Server + Local)' });
+      } else {
+        setMessage({ type: 'success', text: tr ? '✅ Yerel olarak kaydedildi' : '✅ Saved locally' });
+      }
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (err) {
       console.error('Save error:', err);
-      // Local'e kaydettik, sorun değil
-      setMessage({ type: 'success', text: tr ? '✅ Kaydedildi!' : '✅ Saved!' });
+      setMessage({ type: 'success', text: tr ? '✅ Yerel olarak kaydedildi' : '✅ Saved locally' });
     } finally {
       setSaving(false);
     }

@@ -25,6 +25,7 @@ import AboutPage from '@/components/pages/AboutPage';
 import ContactPage from '@/components/pages/ContactPage';
 import SupportPage from '@/components/pages/SupportPage';
 import PrivacyPage from '@/components/pages/PrivacyPage';
+import Footer from '@/components/Footer';
 
 export default function Home() {
   const { 
@@ -239,6 +240,7 @@ export default function Home() {
     <div className="min-h-screen transition-colors duration-500" style={{ background: theme.colors.background }}>
       <Header />
       <main className="pb-8 animate-fadeIn">{renderPage()}</main>
+      <Footer />
       <GameModal />
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
       {showProfile && <Profile />}

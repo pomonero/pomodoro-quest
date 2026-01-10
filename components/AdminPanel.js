@@ -44,7 +44,7 @@ const DEFAULT_SETTINGS = {
     youtube: '',
     tiktok: '',
     discord: '',
-    email: 'aliiduurak@gmail.com',
+    email: 'info@pomonero.com',
   },
   // Footer
   footer: {
@@ -89,7 +89,7 @@ const DEFAULT_SETTINGS = {
   },
   // Güvenlik
   security: {
-    adminPassword: 'Aldrk273142.',
+    adminPassword: 'pomonero2024',
     sessionTimeout: 30, // dakika
     maxLoginAttempts: 5,
   },
@@ -527,17 +527,88 @@ export default function AdminPanel() {
                     {/* Fotoğraf Tipi */}
                     {slot.type === 'image' && (
                       <div className="space-y-3">
+                        {/* Dosya Yükleme */}
                         <div>
-                          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Fotoğraf URL' : 'Image URL'}</label>
+                          <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--text)' }}>
+                            📷 {tr ? 'Fotoğraf Yükle' : 'Upload Image'}
+                          </label>
+                          <div className="flex gap-2">
+                            <label className="flex-1 p-3 rounded-lg border-2 border-dashed cursor-pointer text-center transition-all hover:border-[var(--primary)]" style={{ borderColor: 'var(--border)', background: 'var(--background)' }}>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  
+                                  // Piksel kontrolü
+                                  const [reqWidth, reqHeight] = slot.size.split('x').map(Number);
+                                  const img = new Image();
+                                  const reader = new FileReader();
+                                  
+                                  reader.onload = (event) => {
+                                    img.onload = () => {
+                                      // Piksel uyumu kontrol et
+                                      if (img.width !== reqWidth || img.height !== reqHeight) {
+                                        const confirm = window.confirm(
+                                          tr 
+                                            ? `⚠️ Fotoğraf boyutu ${img.width}x${img.height}, gerekli boyut ${reqWidth}x${reqHeight}.\n\nFotoğrafı otomatik boyutlandırmak ister misiniz?`
+                                            : `⚠️ Image size is ${img.width}x${img.height}, required size is ${reqWidth}x${reqHeight}.\n\nDo you want to auto-resize?`
+                                        );
+                                        
+                                        if (confirm) {
+                                          // Canvas ile boyutlandır
+                                          const canvas = document.createElement('canvas');
+                                          canvas.width = reqWidth;
+                                          canvas.height = reqHeight;
+                                          const ctx = canvas.getContext('2d');
+                                          ctx.drawImage(img, 0, 0, reqWidth, reqHeight);
+                                          const resizedBase64 = canvas.toDataURL('image/jpeg', 0.9);
+                                          updateNestedSetting('ads', key, 'imageUrl', resizedBase64);
+                                          updateNestedSetting('ads', key, 'imageSize', `${reqWidth}x${reqHeight} (boyutlandırıldı)`);
+                                        }
+                                      } else {
+                                        // Boyut uyumlu, direkt kaydet
+                                        updateNestedSetting('ads', key, 'imageUrl', event.target?.result);
+                                        updateNestedSetting('ads', key, 'imageSize', `${img.width}x${img.height} ✓`);
+                                      }
+                                    };
+                                    img.src = event.target?.result;
+                                  };
+                                  reader.readAsDataURL(file);
+                                }}
+                              />
+                              <span className="text-2xl block mb-1">📤</span>
+                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                {tr ? 'Tıkla veya sürükle' : 'Click or drag'}
+                              </span>
+                            </label>
+                          </div>
+                          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                            📐 {tr ? 'Önerilen boyut:' : 'Recommended size:'} <strong>{slot.size}</strong> px
+                            {slot.imageSize && <span className="ml-2">| {slot.imageSize}</span>}
+                          </p>
+                        </div>
+
+                        {/* VEYA URL */}
+                        <div className="flex items-center gap-2 my-2">
+                          <div className="flex-1 h-px" style={{ background: 'var(--border)' }}></div>
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr ? 'veya URL' : 'or URL'}</span>
+                          <div className="flex-1 h-px" style={{ background: 'var(--border)' }}></div>
+                        </div>
+
+                        <div>
                           <input
                             type="text"
-                            value={slot.imageUrl || ''}
+                            value={slot.imageUrl?.startsWith('data:') ? '' : (slot.imageUrl || '')}
                             onChange={(e) => updateNestedSetting('ads', key, 'imageUrl', e.target.value)}
                             placeholder="https://example.com/banner.jpg"
                             className="w-full p-2 rounded-lg text-sm outline-none"
                             style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
                           />
                         </div>
+
                         <div>
                           <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Tıklama Linki' : 'Click Link'}</label>
                           <input
@@ -549,6 +620,7 @@ export default function AdminPanel() {
                             style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
                           />
                         </div>
+
                         <div>
                           <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Alternatif Metin' : 'Alt Text'}</label>
                           <input
@@ -560,10 +632,29 @@ export default function AdminPanel() {
                             style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
                           />
                         </div>
+
+                        {/* Önizleme */}
                         {slot.imageUrl && (
-                          <div className="p-2 rounded-lg" style={{ background: 'var(--background)' }}>
-                            <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{tr ? 'Önizleme:' : 'Preview:'}</p>
-                            <img src={slot.imageUrl} alt={slot.altText || 'Ad'} className="max-h-32 rounded" onError={(e) => e.target.style.display='none'} />
+                          <div className="p-3 rounded-lg" style={{ background: 'var(--background)' }}>
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs font-medium" style={{ color: 'var(--text)' }}>{tr ? 'Önizleme:' : 'Preview:'}</p>
+                              <button
+                                onClick={() => {
+                                  updateNestedSetting('ads', key, 'imageUrl', '');
+                                  updateNestedSetting('ads', key, 'imageSize', '');
+                                }}
+                                className="text-xs text-red-400 hover:text-red-300"
+                              >
+                                🗑️ {tr ? 'Sil' : 'Remove'}
+                              </button>
+                            </div>
+                            <img 
+                              src={slot.imageUrl} 
+                              alt={slot.altText || 'Ad'} 
+                              className="max-h-40 rounded border"
+                              style={{ borderColor: 'var(--border)' }}
+                              onError={(e) => e.target.style.display='none'} 
+                            />
                           </div>
                         )}
                       </div>
