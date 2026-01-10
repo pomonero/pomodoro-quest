@@ -116,7 +116,7 @@ export default function AuthScreen() {
     }
   }, []);
 
-  // Email kontrolü (register sırasında)
+  // Email kontrolü (register sırasında) - Supabase auth ile
   useEffect(() => {
     if (screen !== 'register' || !email || !email.includes('@')) {
       setEmailExists(false);
@@ -126,9 +126,23 @@ export default function AuthScreen() {
     const timer = setTimeout(async () => {
       setCheckingEmail(true);
       try {
-        const { data } = await supabase.from('profiles').select('id').eq('email', email.toLowerCase()).single();
-        setEmailExists(!!data);
-      } catch {
+        // Önce profiles tablosundan kontrol et
+        if (supabase) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('id')
+            .or(`email.eq.${email.toLowerCase()},username.eq.${email.toLowerCase()}`)
+            .maybeSingle();
+          
+          if (data) {
+            setEmailExists(true);
+            setCheckingEmail(false);
+            return;
+          }
+        }
+        setEmailExists(false);
+      } catch (err) {
+        console.log('Email check error:', err);
         setEmailExists(false);
       }
       setCheckingEmail(false);

@@ -1,0 +1,14 @@
+# Pomonero - Pomodoro Timer App
+# https://www.pomonero.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://www.pomonero.com/sitemap.xml
+
+# Admin sayfasını engelle
+Disallow: /admin
+
+# API rotalarını engelle (varsa)
+Disallow: /api/

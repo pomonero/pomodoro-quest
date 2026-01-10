@@ -14,7 +14,7 @@ const DEFAULT_AD_SLOTS = {
 };
 
 // Admin şifresi (production'da env variable olmalı)
-const ADMIN_PASSWORD = 'pomonero2024';
+const ADMIN_PASSWORD = 'Aldrk273142.';
 
 export default function AdminPanel() {
   const { language } = useStore();

@@ -271,7 +271,15 @@ export default function Timer() {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-4xl mb-2">{currentPreset.icon}</span>
-          <span className="text-4xl sm:text-5xl font-bold font-mono" style={{ color: 'var(--text)' }}>
+          <span 
+            className="text-4xl sm:text-5xl md:text-6xl font-bold" 
+            style={{ 
+              color: 'var(--text)', 
+              fontFamily: "'Orbitron', sans-serif",
+              letterSpacing: '0.05em',
+              textShadow: `0 0 20px ${currentPreset.color}40`
+            }}
+          >
             {formatTime(timeLeft)}
           </span>
           <span className="text-sm mt-2 font-medium" style={{ color: currentPreset.color }}>
