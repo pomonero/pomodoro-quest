@@ -17,8 +17,7 @@ const SLOT_SIZES = {
 export function AdSlot({ slotKey, className = '' }) {
   const { language } = useStore();
   const tr = language === 'tr';
-  const [adCode, setAdCode] = useState('');
-  const [enabled, setEnabled] = useState(false);
+  const [slot, setSlot] = useState({ enabled: false, type: 'code' });
   
   useEffect(() => {
     const slots = localStorage.getItem('pomonero_ad_slots');
@@ -26,8 +25,7 @@ export function AdSlot({ slotKey, className = '' }) {
       try {
         const parsed = JSON.parse(slots);
         if (parsed[slotKey]) {
-          setEnabled(parsed[slotKey].enabled);
-          setAdCode(parsed[slotKey].code);
+          setSlot(parsed[slotKey]);
         }
       } catch {}
     }
@@ -35,36 +33,101 @@ export function AdSlot({ slotKey, className = '' }) {
 
   const size = SLOT_SIZES[slotKey] || { width: 300, height: 250 };
 
-  // Reklam kodu varsa göster
-  if (enabled && adCode) {
+  // Devre dışı
+  if (!slot.enabled) {
     return (
       <div 
-        className={`flex items-center justify-center ${className}`}
-        dangerouslySetInnerHTML={{ __html: adCode }}
-      />
+        className={`card overflow-hidden flex items-center justify-center relative ${className}`}
+        style={{ minHeight: Math.min(size.height, 200) }}
+      >
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute w-20 h-20 bg-[var(--primary)] rounded-full blur-3xl -top-10 -left-10 animate-pulse" />
+          <div className="absolute w-20 h-20 bg-[var(--secondary)] rounded-full blur-3xl -bottom-10 -right-10 animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        <div className="text-center p-4 relative z-10">
+          <div className="text-3xl mb-2">📢</div>
+          <p className="font-medium text-sm" style={{ color: 'var(--text)' }}>
+            {tr ? 'Reklam Alanı' : 'Ad Space'}
+          </p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            {size.width} x {size.height}
+          </p>
+        </div>
+        <div className="absolute inset-0 border-2 border-dashed rounded-2xl opacity-20" style={{ borderColor: 'var(--primary)' }} />
+      </div>
     );
   }
 
-  // Placeholder göster
+  // Kod Tipi - HTML/JS
+  if (!slot.type || slot.type === 'code') {
+    if (slot.code) {
+      return (
+        <div 
+          className={`flex items-center justify-center ${className}`}
+          dangerouslySetInnerHTML={{ __html: slot.code }}
+        />
+      );
+    }
+  }
+
+  // Fotoğraf Tipi
+  if (slot.type === 'image' && slot.imageUrl) {
+    const content = (
+      <img 
+        src={slot.imageUrl} 
+        alt={slot.altText || 'Advertisement'} 
+        className="w-full h-full object-cover rounded-2xl"
+        style={{ maxHeight: size.height }}
+      />
+    );
+    
+    if (slot.clickUrl) {
+      return (
+        <a 
+          href={slot.clickUrl} 
+          target="_blank" 
+          rel="noopener noreferrer sponsored"
+          className={`block ${className}`}
+        >
+          {content}
+        </a>
+      );
+    }
+    return <div className={className}>{content}</div>;
+  }
+
+  // Link Tipi
+  if (slot.type === 'link' && slot.linkUrl) {
+    return (
+      <a 
+        href={slot.linkUrl}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        className={`card p-4 flex items-center justify-center text-center hover:scale-[1.02] transition-all ${className}`}
+        style={{ 
+          background: slot.bgColor || 'var(--primary)',
+          minHeight: Math.min(size.height, 100)
+        }}
+      >
+        <span className="font-semibold text-white">
+          {slot.linkText || 'Advertisement'}
+        </span>
+      </a>
+    );
+  }
+
+  // Fallback - Placeholder
   return (
     <div 
       className={`card overflow-hidden flex items-center justify-center relative ${className}`}
-      style={{ minHeight: Math.min(size.height, 300) }}
+      style={{ minHeight: Math.min(size.height, 200) }}
     >
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute w-20 h-20 bg-[var(--primary)] rounded-full blur-3xl -top-10 -left-10 animate-pulse" />
-        <div className="absolute w-20 h-20 bg-[var(--secondary)] rounded-full blur-3xl -bottom-10 -right-10 animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
-      <div className="text-center p-4 relative z-10">
+      <div className="text-center p-4">
         <div className="text-3xl mb-2">📢</div>
-        <p className="font-medium text-sm" style={{ color: 'var(--text)' }}>
-          {tr ? 'Reklam Alanı' : 'Ad Space'}
-        </p>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
           {size.width} x {size.height}
         </p>
       </div>
-      <div className="absolute inset-0 border-2 border-dashed rounded-2xl opacity-20" style={{ borderColor: 'var(--primary)' }} />
     </div>
   );
 }

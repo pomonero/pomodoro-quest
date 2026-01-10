@@ -44,7 +44,7 @@ const DEFAULT_SETTINGS = {
     youtube: '',
     tiktok: '',
     discord: '',
-    email: 'info@pomonero.com',
+    email: 'aliiduurak@gmail.com',
   },
   // Footer
   footer: {
@@ -300,9 +300,6 @@ export default function AdminPanel() {
               {tr ? 'Giriş Yap' : 'Login'}
             </button>
           </form>
-          <p className="text-xs text-center mt-4" style={{ color: 'var(--text-muted)' }}>
-            {tr ? 'Varsayılan şifre: pomonero2024' : 'Default password: pomonero2024'}
-          </p>
         </div>
       </div>
     );
@@ -466,8 +463,25 @@ export default function AdminPanel() {
           {activeTab === 'ads' && (
             <div>
               <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>📢 {tr ? 'Reklam Yönetimi' : 'Ad Management'}</h2>
-              <Input label="Google AdSense Publisher ID" value={settings.seo.googleAdsenseId} onChange={(v) => updateSetting('seo', 'googleAdsenseId', v)} placeholder="ca-pub-XXXXXXXXXXXXXXXX" />
-              <div className="space-y-4 mt-6">
+              
+              {/* Google AdSense Bölümü */}
+              <div className="p-4 rounded-xl mb-6" style={{ background: 'var(--surface)', border: '2px solid var(--primary)' }}>
+                <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                  <span>📊</span> Google AdSense
+                </h3>
+                <Input label="Publisher ID" value={settings.seo.googleAdsenseId} onChange={(v) => updateSetting('seo', 'googleAdsenseId', v)} placeholder="ca-pub-XXXXXXXXXXXXXXXX" help={tr ? 'AdSense hesabınızdan Publisher ID' : 'Publisher ID from your AdSense account'} />
+                <div className="mt-3 p-3 rounded-lg text-xs" style={{ background: 'var(--background)' }}>
+                  <p className="font-semibold mb-1" style={{ color: 'var(--text)' }}>{tr ? 'Head Kodu:' : 'Head Code:'}</p>
+                  <code style={{ color: 'var(--text-muted)' }}>
+                    {`<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${settings.seo.googleAdsenseId || 'ca-pub-XXX'}" crossorigin="anonymous"></script>`}
+                  </code>
+                </div>
+              </div>
+
+              {/* Reklam Slotları */}
+              <h3 className="font-bold mb-4" style={{ color: 'var(--text)' }}>{tr ? '📍 Reklam Slotları' : '📍 Ad Slots'}</h3>
+              
+              <div className="space-y-4">
                 {Object.entries(settings.ads).map(([key, slot]) => (
                   <div key={key} className="p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
                     <div className="flex items-center justify-between mb-3">
@@ -475,23 +489,134 @@ export default function AdminPanel() {
                         <h4 className="font-semibold capitalize" style={{ color: 'var(--text)' }}>{key.replace(/_/g, ' ')}</h4>
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{slot.size}</p>
                       </div>
-                      <button
-                        onClick={() => updateNestedSetting('ads', key, 'enabled', !slot.enabled)}
-                        className={`px-3 py-1 rounded-full text-sm ${slot.enabled ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}
-                      >
-                        {slot.enabled ? 'Aktif' : 'Kapalı'}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={slot.type || 'code'}
+                          onChange={(e) => updateNestedSetting('ads', key, 'type', e.target.value)}
+                          className="p-2 rounded-lg text-sm outline-none"
+                          style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                        >
+                          <option value="code">{tr ? 'Kod' : 'Code'}</option>
+                          <option value="image">{tr ? 'Fotoğraf' : 'Image'}</option>
+                          <option value="link">{tr ? 'Link' : 'Link'}</option>
+                        </select>
+                        <button
+                          onClick={() => updateNestedSetting('ads', key, 'enabled', !slot.enabled)}
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${slot.enabled ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}
+                        >
+                          {slot.enabled ? '✓' : '✕'}
+                        </button>
+                      </div>
                     </div>
-                    <textarea
-                      value={slot.code}
-                      onChange={(e) => updateNestedSetting('ads', key, 'code', e.target.value)}
-                      placeholder={tr ? 'Reklam kodunu yapıştırın...' : 'Paste ad code...'}
-                      rows={3}
-                      className="w-full p-2 rounded-lg text-xs font-mono resize-none outline-none"
-                      style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                    />
+                    
+                    {/* Kod Tipi */}
+                    {(!slot.type || slot.type === 'code') && (
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Reklam Kodu (AdSense, vb.)' : 'Ad Code (AdSense, etc.)'}</label>
+                        <textarea
+                          value={slot.code || ''}
+                          onChange={(e) => updateNestedSetting('ads', key, 'code', e.target.value)}
+                          placeholder={tr ? 'HTML/JavaScript kodunu yapıştırın...' : 'Paste HTML/JavaScript code...'}
+                          rows={3}
+                          className="w-full p-2 rounded-lg text-xs font-mono resize-none outline-none"
+                          style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Fotoğraf Tipi */}
+                    {slot.type === 'image' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Fotoğraf URL' : 'Image URL'}</label>
+                          <input
+                            type="text"
+                            value={slot.imageUrl || ''}
+                            onChange={(e) => updateNestedSetting('ads', key, 'imageUrl', e.target.value)}
+                            placeholder="https://example.com/banner.jpg"
+                            className="w-full p-2 rounded-lg text-sm outline-none"
+                            style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Tıklama Linki' : 'Click Link'}</label>
+                          <input
+                            type="text"
+                            value={slot.clickUrl || ''}
+                            onChange={(e) => updateNestedSetting('ads', key, 'clickUrl', e.target.value)}
+                            placeholder="https://example.com"
+                            className="w-full p-2 rounded-lg text-sm outline-none"
+                            style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Alternatif Metin' : 'Alt Text'}</label>
+                          <input
+                            type="text"
+                            value={slot.altText || ''}
+                            onChange={(e) => updateNestedSetting('ads', key, 'altText', e.target.value)}
+                            placeholder={tr ? 'Reklam açıklaması' : 'Ad description'}
+                            className="w-full p-2 rounded-lg text-sm outline-none"
+                            style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        {slot.imageUrl && (
+                          <div className="p-2 rounded-lg" style={{ background: 'var(--background)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{tr ? 'Önizleme:' : 'Preview:'}</p>
+                            <img src={slot.imageUrl} alt={slot.altText || 'Ad'} className="max-h-32 rounded" onError={(e) => e.target.style.display='none'} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Link Tipi */}
+                    {slot.type === 'link' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Link Metni' : 'Link Text'}</label>
+                          <input
+                            type="text"
+                            value={slot.linkText || ''}
+                            onChange={(e) => updateNestedSetting('ads', key, 'linkText', e.target.value)}
+                            placeholder={tr ? 'Reklam Metni' : 'Ad Text'}
+                            className="w-full p-2 rounded-lg text-sm outline-none"
+                            style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Link URL' : 'Link URL'}</label>
+                          <input
+                            type="text"
+                            value={slot.linkUrl || ''}
+                            onChange={(e) => updateNestedSetting('ads', key, 'linkUrl', e.target.value)}
+                            placeholder="https://example.com"
+                            className="w-full p-2 rounded-lg text-sm outline-none"
+                            style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{tr ? 'Arka Plan Rengi' : 'Background Color'}</label>
+                          <input
+                            type="color"
+                            value={slot.bgColor || '#6366f1'}
+                            onChange={(e) => updateNestedSetting('ads', key, 'bgColor', e.target.value)}
+                            className="w-full h-10 rounded-lg cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
+              </div>
+              
+              {/* Yardım */}
+              <div className="mt-6 p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
+                <h4 className="font-semibold mb-2" style={{ color: 'var(--text)' }}>💡 {tr ? 'İpuçları' : 'Tips'}</h4>
+                <ul className="text-sm space-y-1" style={{ color: 'var(--text-muted)' }}>
+                  <li>• <strong>Kod:</strong> {tr ? 'Google AdSense veya diğer reklam ağları için' : 'For Google AdSense or other ad networks'}</li>
+                  <li>• <strong>{tr ? 'Fotoğraf' : 'Image'}:</strong> {tr ? 'Kendi banner\'ınızı yüklemek için' : 'To use your own banner image'}</li>
+                  <li>• <strong>Link:</strong> {tr ? 'Basit metin reklam için' : 'For simple text advertisement'}</li>
+                </ul>
               </div>
             </div>
           )}
