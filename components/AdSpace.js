@@ -5,60 +5,67 @@ import { useStore } from '@/lib/store';
 
 // Slot boyutları
 const SLOT_SIZES = {
-  header_banner: { width: 728, height: 90, mobileWidth: 320, mobileHeight: 50 },
+  header_banner: { width: 728, height: 90 },
   sidebar_square: { width: 300, height: 250 },
   sidebar_vertical: { width: 160, height: 600 },
   content_rectangle: { width: 336, height: 280 },
-  footer_billboard: { width: 970, height: 250, mobileWidth: 320, mobileHeight: 100 },
+  footer_billboard: { width: 970, height: 250 },
   mobile_banner: { width: 320, height: 100 },
 };
 
-// Reklam bileşeni - slot key ile çalışır
+// Tek bir reklam slotu
 export function AdSlot({ slotKey, className = '' }) {
   const { language } = useStore();
   const tr = language === 'tr';
-  const [slot, setSlot] = useState({ enabled: false, type: 'code' });
+  const [slot, setSlot] = useState(null);
+  const [loaded, setLoaded] = useState(false);
   
   useEffect(() => {
-    const slots = localStorage.getItem('pomonero_ad_slots');
-    if (slots) {
-      try {
-        const parsed = JSON.parse(slots);
-        if (parsed[slotKey]) {
-          setSlot(parsed[slotKey]);
-        }
-      } catch {}
-    }
-  }, [slotKey]);
+    // Sadece bir kere yükle
+    if (loaded) return;
+    
+    const loadSlot = () => {
+      const saved = localStorage.getItem('pomonero_ad_slots');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed[slotKey]) {
+            setSlot(parsed[slotKey]);
+          }
+        } catch {}
+      }
+      setLoaded(true);
+    };
+    
+    loadSlot();
+  }, [slotKey, loaded]);
 
   const size = SLOT_SIZES[slotKey] || { width: 300, height: 250 };
 
-  // Devre dışı
-  if (!slot.enabled) {
+  // Yükleniyor
+  if (!loaded) {
+    return null;
+  }
+
+  // Slot yok veya devre dışı
+  if (!slot || !slot.enabled) {
     return (
       <div 
         className={`card overflow-hidden flex items-center justify-center relative ${className}`}
-        style={{ minHeight: Math.min(size.height, 200) }}
+        style={{ minHeight: Math.min(size.height, 150) }}
       >
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute w-20 h-20 bg-[var(--primary)] rounded-full blur-3xl -top-10 -left-10 animate-pulse" />
-          <div className="absolute w-20 h-20 bg-[var(--secondary)] rounded-full blur-3xl -bottom-10 -right-10 animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
-        <div className="text-center p-4 relative z-10">
-          <div className="text-3xl mb-2">📢</div>
-          <p className="font-medium text-sm" style={{ color: 'var(--text)' }}>
-            {tr ? 'Reklam Alanı' : 'Ad Space'}
-          </p>
+        <div className="text-center p-4">
+          <div className="text-2xl mb-1 opacity-50">📢</div>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            {size.width} x {size.height}
+            {size.width}x{size.height}
           </p>
         </div>
-        <div className="absolute inset-0 border-2 border-dashed rounded-2xl opacity-20" style={{ borderColor: 'var(--primary)' }} />
+        <div className="absolute inset-0 border-2 border-dashed rounded-2xl opacity-10" style={{ borderColor: 'var(--primary)' }} />
       </div>
     );
   }
 
-  // Kod Tipi - HTML/JS
+  // Kod tipi
   if (!slot.type || slot.type === 'code') {
     if (slot.code) {
       return (
@@ -70,14 +77,19 @@ export function AdSlot({ slotKey, className = '' }) {
     }
   }
 
-  // Fotoğraf Tipi
+  // Fotoğraf tipi
   if (slot.type === 'image' && slot.imageUrl) {
-    const content = (
+    const imgElement = (
       <img 
         src={slot.imageUrl} 
-        alt={slot.altText || 'Advertisement'} 
-        className="w-full h-full object-cover rounded-2xl"
-        style={{ maxHeight: size.height }}
+        alt={slot.altText || 'Ad'} 
+        className="rounded-2xl object-cover"
+        style={{ 
+          width: '100%',
+          maxWidth: size.width,
+          height: 'auto',
+          maxHeight: size.height
+        }}
       />
     );
     
@@ -89,14 +101,14 @@ export function AdSlot({ slotKey, className = '' }) {
           rel="noopener noreferrer sponsored"
           className={`block ${className}`}
         >
-          {content}
+          {imgElement}
         </a>
       );
     }
-    return <div className={className}>{content}</div>;
+    return <div className={className}>{imgElement}</div>;
   }
 
-  // Link Tipi
+  // Link tipi
   if (slot.type === 'link' && slot.linkUrl) {
     return (
       <a 
@@ -106,7 +118,7 @@ export function AdSlot({ slotKey, className = '' }) {
         className={`card p-4 flex items-center justify-center text-center hover:scale-[1.02] transition-all ${className}`}
         style={{ 
           background: slot.bgColor || 'var(--primary)',
-          minHeight: Math.min(size.height, 100)
+          minHeight: Math.min(size.height, 80)
         }}
       >
         <span className="font-semibold text-white">
@@ -116,17 +128,15 @@ export function AdSlot({ slotKey, className = '' }) {
     );
   }
 
-  // Fallback - Placeholder
+  // Fallback
   return (
     <div 
-      className={`card overflow-hidden flex items-center justify-center relative ${className}`}
-      style={{ minHeight: Math.min(size.height, 200) }}
+      className={`card flex items-center justify-center ${className}`}
+      style={{ minHeight: Math.min(size.height, 150) }}
     >
       <div className="text-center p-4">
-        <div className="text-3xl mb-2">📢</div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          {size.width} x {size.height}
-        </p>
+        <div className="text-2xl mb-1 opacity-50">📢</div>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{size.width}x{size.height}</p>
       </div>
     </div>
   );
@@ -134,7 +144,6 @@ export function AdSlot({ slotKey, className = '' }) {
 
 // Eski uyumluluk için default export
 export default function AdSpace({ size = 'mediumRectangle', className = '' }) {
-  // Size'a göre slot key belirle
   const slotMap = {
     leaderboard: 'header_banner',
     banner: 'header_banner',
