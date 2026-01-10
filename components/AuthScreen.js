@@ -185,7 +185,10 @@ export default function AuthScreen() {
       if (data.user) {
         setUser(data.user);
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
-        if (profile) setProfile(profile);
+        if (profile) {
+          setProfile(profile);
+          localStorage.setItem('pomonero_profile', JSON.stringify(profile));
+        }
       }
     } catch {
       setMessage({ type: 'error', text: t.unknownError });

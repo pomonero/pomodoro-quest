@@ -51,12 +51,38 @@ export default function Home() {
     
     const checkUser = async () => {
       try {
+        // Önce local storage'dan profil yükle (hızlı)
+        const localProfile = localStorage.getItem('pomonero_profile');
+        const localStats = localStorage.getItem('pomonero_stats');
+        if (localProfile) {
+          try { setProfile(JSON.parse(localProfile)); } catch {}
+        }
+        if (localStats) {
+          try { setStats(JSON.parse(localStats)); } catch {}
+        }
+
         const user = await auth.getUser();
         if (user) {
           setUser(user);
-          const { data: profileData } = await db.getProfile(user.id);
-          if (profileData) setProfile(profileData);
-          db.getUserStats(user.id).then(stats => setStats(stats)).catch(() => {});
+          
+          // Supabase'den profil çek (varsa local'i override et)
+          try {
+            const { data: profileData } = await db.getProfile(user.id);
+            if (profileData) {
+              setProfile(profileData);
+              localStorage.setItem('pomonero_profile', JSON.stringify(profileData));
+            }
+          } catch (e) {
+            console.log('Profile fetch error, using local:', e);
+          }
+          
+          // Stats ve leaderboard arka planda
+          db.getUserStats(user.id).then(stats => {
+            if (stats) {
+              setStats(stats);
+              localStorage.setItem('pomonero_stats', JSON.stringify(stats));
+            }
+          }).catch(() => {});
           db.getLeaderboard().then(({ data }) => data && setLeaderboard(data)).catch(() => {});
         }
       } catch (err) {
