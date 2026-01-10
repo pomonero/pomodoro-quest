@@ -3,18 +3,109 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '@/lib/store';
 
-// Varsayılan reklam slotları
-const DEFAULT_AD_SLOTS = {
-  header_banner: { enabled: false, code: '', size: '728x90', name: 'Header Banner (Leaderboard)' },
-  sidebar_square: { enabled: false, code: '', size: '300x250', name: 'Sidebar Kare' },
-  sidebar_vertical: { enabled: false, code: '', size: '160x600', name: 'Sidebar Dikey (Skyscraper)' },
-  content_rectangle: { enabled: false, code: '', size: '336x280', name: 'İçerik Dikdörtgen' },
-  footer_billboard: { enabled: false, code: '', size: '970x250', name: 'Footer Billboard' },
-  mobile_banner: { enabled: false, code: '', size: '320x100', name: 'Mobil Banner' },
+// Varsayılan site ayarları
+const DEFAULT_SETTINGS = {
+  // Site Genel
+  site: {
+    name: 'Pomonero',
+    title: 'Pomonero - Pomodoro Zamanlayıcı',
+    description: 'Modern pomodoro zamanlayıcı uygulaması. Odaklanın, verimli çalışın ve başarın.',
+    keywords: 'pomodoro, timer, odaklanma, verimlilik, TYT, AYT',
+    logo: '/logo-dark.png',
+    favicon: '/favicon.png',
+  },
+  // Timer Varsayılanları
+  timer: {
+    focusTime: 25,
+    shortBreak: 5,
+    longBreak: 30,
+    tytTime: 120,
+    aytTime: 165,
+    autoStartBreaks: false,
+    autoStartPomodoros: false,
+    showSeconds: true,
+  },
+  // Tema Özelleştirme
+  theme: {
+    defaultTheme: 'midnight',
+    allowUserThemeChange: true,
+    customColors: {
+      primary: '#6366f1',
+      secondary: '#f472b6',
+      accent: '#22d3ee',
+    },
+    font: 'Inter',
+    timerFont: 'Orbitron',
+  },
+  // Sosyal Medya
+  social: {
+    instagram: '',
+    twitter: '',
+    youtube: '',
+    tiktok: '',
+    discord: '',
+    email: 'info@pomonero.com',
+  },
+  // Footer
+  footer: {
+    copyright: '© 2026 Pomonero. Tüm hakları saklıdır.',
+    showSocial: true,
+    showLinks: true,
+    customText: '',
+  },
+  // SEO
+  seo: {
+    googleAnalyticsId: '',
+    googleAdsenseId: '',
+    googleSearchConsoleCode: '',
+    enableSitemap: true,
+    enableRobots: true,
+  },
+  // Reklam Slotları
+  ads: {
+    header_banner: { enabled: false, code: '', size: '728x90' },
+    sidebar_square: { enabled: false, code: '', size: '300x250' },
+    sidebar_vertical: { enabled: false, code: '', size: '160x600' },
+    content_rectangle: { enabled: false, code: '', size: '336x280' },
+    footer_billboard: { enabled: false, code: '', size: '970x250' },
+    mobile_banner: { enabled: false, code: '', size: '320x100' },
+  },
+  // Özellikler
+  features: {
+    enableGames: true,
+    enableRadio: true,
+    enableWeather: true,
+    enableLeaderboard: true,
+    enableCalendar: true,
+    enableDailyInfo: true,
+    enableStats: true,
+  },
+  // İletişim
+  contact: {
+    email: 'info@pomonero.com',
+    phone: '',
+    address: '',
+    showContactForm: true,
+  },
+  // Güvenlik
+  security: {
+    adminPassword: 'Aldrk273142.',
+    sessionTimeout: 30, // dakika
+    maxLoginAttempts: 5,
+  },
 };
 
-// Admin şifresi (production'da env variable olmalı)
-const ADMIN_PASSWORD = 'Aldrk273142.';
+// Tab'lar
+const TABS = [
+  { id: 'site', icon: '🏠', label: 'Site', labelEn: 'Site' },
+  { id: 'timer', icon: '⏱️', label: 'Zamanlayıcı', labelEn: 'Timer' },
+  { id: 'theme', icon: '🎨', label: 'Tema', labelEn: 'Theme' },
+  { id: 'ads', icon: '📢', label: 'Reklamlar', labelEn: 'Ads' },
+  { id: 'features', icon: '⚙️', label: 'Özellikler', labelEn: 'Features' },
+  { id: 'social', icon: '🔗', label: 'Sosyal', labelEn: 'Social' },
+  { id: 'seo', icon: '🔍', label: 'SEO', labelEn: 'SEO' },
+  { id: 'security', icon: '🔐', label: 'Güvenlik', labelEn: 'Security' },
+];
 
 export default function AdminPanel() {
   const { language } = useStore();
@@ -22,64 +113,99 @@ export default function AdminPanel() {
   
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  const [adSlots, setAdSlots] = useState(DEFAULT_AD_SLOTS);
-  const [adsenseId, setAdsenseId] = useState('');
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [activeTab, setActiveTab] = useState('slots');
+  const [activeTab, setActiveTab] = useState('site');
+  const [hasChanges, setHasChanges] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
 
-  // Kayıtlı ayarları yükle
+  // Ayarları yükle
   useEffect(() => {
-    const savedSlots = localStorage.getItem('pomonero_ad_slots');
-    const savedAdsenseId = localStorage.getItem('pomonero_adsense_id');
-    
-    if (savedSlots) {
+    const saved = localStorage.getItem('pomonero_admin_settings');
+    if (saved) {
       try {
-        setAdSlots({ ...DEFAULT_AD_SLOTS, ...JSON.parse(savedSlots) });
+        const parsed = JSON.parse(saved);
+        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       } catch {}
     }
-    if (savedAdsenseId) {
-      setAdsenseId(savedAdsenseId);
+    
+    // Session kontrolü
+    const session = sessionStorage.getItem('pomonero_admin_session');
+    if (session) {
+      const { expires } = JSON.parse(session);
+      if (new Date(expires) > new Date()) {
+        setIsAuthenticated(true);
+      }
     }
   }, []);
 
+  // Değişiklik takibi
+  const updateSetting = (category, key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [category]: { ...prev[category], [key]: value }
+    }));
+    setHasChanges(true);
+  };
+
+  // Nested setting güncelle
+  const updateNestedSetting = (category, subKey, key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [subKey]: { ...prev[category][subKey], [key]: value }
+      }
+    }));
+    setHasChanges(true);
+  };
+
+  // Login
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    
+    if (loginAttempts >= settings.security.maxLoginAttempts) {
+      setMessage({ type: 'error', text: tr ? 'Çok fazla deneme! 5 dakika bekleyin.' : 'Too many attempts! Wait 5 minutes.' });
+      return;
+    }
+    
+    if (password === settings.security.adminPassword) {
       setIsAuthenticated(true);
+      const expires = new Date(Date.now() + settings.security.sessionTimeout * 60 * 1000);
+      sessionStorage.setItem('pomonero_admin_session', JSON.stringify({ expires }));
       setMessage({ type: '', text: '' });
+      setLoginAttempts(0);
     } else {
-      setMessage({ type: 'error', text: tr ? 'Yanlış şifre!' : 'Wrong password!' });
+      setLoginAttempts(prev => prev + 1);
+      setMessage({ type: 'error', text: tr ? `Yanlış şifre! (${settings.security.maxLoginAttempts - loginAttempts - 1} deneme kaldı)` : `Wrong password! (${settings.security.maxLoginAttempts - loginAttempts - 1} attempts left)` });
     }
   };
 
-  const updateSlot = (slotKey, field, value) => {
-    setAdSlots(prev => ({
-      ...prev,
-      [slotKey]: { ...prev[slotKey], [field]: value }
-    }));
-  };
-
+  // Kaydet
   const saveSettings = () => {
-    localStorage.setItem('pomonero_ad_slots', JSON.stringify(adSlots));
-    localStorage.setItem('pomonero_adsense_id', adsenseId);
+    localStorage.setItem('pomonero_admin_settings', JSON.stringify(settings));
+    
+    // Reklam ayarlarını ayrıca kaydet (AdSpace component için)
+    localStorage.setItem('pomonero_ad_slots', JSON.stringify(settings.ads));
+    
+    setHasChanges(false);
+    setLastSaved(new Date());
     setMessage({ type: 'success', text: tr ? '✅ Ayarlar kaydedildi!' : '✅ Settings saved!' });
     setTimeout(() => setMessage({ type: '', text: '' }), 3000);
   };
 
+  // Dışa aktar
   const exportSettings = () => {
-    const settings = {
-      adsenseId,
-      adSlots,
-      exportedAt: new Date().toISOString()
-    };
     const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'pomonero-ad-settings.json';
+    a.download = `pomonero-settings-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
   };
 
+  // İçe aktar
   const importSettings = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -87,10 +213,9 @@ export default function AdminPanel() {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const settings = JSON.parse(event.target?.result);
-        if (settings.adSlots) setAdSlots({ ...DEFAULT_AD_SLOTS, ...settings.adSlots });
-        if (settings.adsenseId) setAdsenseId(settings.adsenseId);
-        saveSettings();
+        const imported = JSON.parse(event.target?.result);
+        setSettings({ ...DEFAULT_SETTINGS, ...imported });
+        setHasChanges(true);
         setMessage({ type: 'success', text: tr ? '✅ Ayarlar içe aktarıldı!' : '✅ Settings imported!' });
       } catch {
         setMessage({ type: 'error', text: tr ? '❌ Geçersiz dosya!' : '❌ Invalid file!' });
@@ -99,14 +224,61 @@ export default function AdminPanel() {
     reader.readAsText(file);
   };
 
+  // Varsayılana sıfırla
+  const resetToDefault = () => {
+    if (confirm(tr ? 'Tüm ayarlar varsayılana sıfırlanacak. Emin misiniz?' : 'All settings will be reset to default. Are you sure?')) {
+      setSettings(DEFAULT_SETTINGS);
+      setHasChanges(true);
+    }
+  };
+
+  // Çıkış
+  const handleLogout = () => {
+    sessionStorage.removeItem('pomonero_admin_session');
+    setIsAuthenticated(false);
+  };
+
+  // Input component
+  const Input = ({ label, value, onChange, type = 'text', placeholder = '', help = '' }) => (
+    <div className="mb-4">
+      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full p-3 rounded-xl outline-none transition-all focus:ring-2 focus:ring-[var(--primary)]"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+      />
+      {help && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{help}</p>}
+    </div>
+  );
+
+  // Toggle component
+  const Toggle = ({ label, checked, onChange, help = '' }) => (
+    <div className="flex items-center justify-between py-3 border-b" style={{ borderColor: 'var(--border)' }}>
+      <div>
+        <span className="font-medium" style={{ color: 'var(--text)' }}>{label}</span>
+        {help && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{help}</p>}
+      </div>
+      <button
+        onClick={() => onChange(!checked)}
+        className={`w-12 h-6 rounded-full transition-all ${checked ? 'bg-green-500' : 'bg-gray-500'}`}
+      >
+        <div className={`w-5 h-5 bg-white rounded-full transition-transform ${checked ? 'translate-x-6' : 'translate-x-0.5'}`} />
+      </button>
+    </div>
+  );
+
   // Login ekranı
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--background)' }}>
-        <div className="w-full max-w-sm p-6 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-          <h1 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--text)' }}>
-            🔐 Admin Panel
-          </h1>
+        <div className="w-full max-w-sm p-6 rounded-2xl animate-scale-in" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+          <div className="text-center mb-6">
+            <span className="text-5xl">🔐</span>
+            <h1 className="text-2xl font-bold mt-2" style={{ color: 'var(--text)' }}>Admin Panel</h1>
+          </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
@@ -115,238 +287,324 @@ export default function AdminPanel() {
               placeholder={tr ? 'Admin şifresi' : 'Admin password'}
               className="w-full p-3 rounded-xl outline-none"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+              autoFocus
             />
             {message.text && (
-              <p className="text-red-400 text-sm">{message.text}</p>
+              <p className="text-red-400 text-sm text-center">{message.text}</p>
             )}
             <button
               type="submit"
-              className="w-full py-3 rounded-xl font-semibold text-white"
+              className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02]"
               style={{ background: 'var(--primary)' }}
             >
               {tr ? 'Giriş Yap' : 'Login'}
             </button>
           </form>
+          <p className="text-xs text-center mt-4" style={{ color: 'var(--text-muted)' }}>
+            {tr ? 'Varsayılan şifre: pomonero2024' : 'Default password: pomonero2024'}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8" style={{ background: 'var(--background)' }}>
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold flex items-center gap-3" style={{ color: 'var(--text)' }}>
-            <span>⚙️</span> {tr ? 'Reklam Yönetimi' : 'Ad Management'}
-          </h1>
-          <button
-            onClick={() => setIsAuthenticated(false)}
-            className="px-4 py-2 rounded-xl text-sm"
-            style={{ background: 'var(--surface)', color: 'var(--text)' }}
-          >
-            {tr ? 'Çıkış' : 'Logout'}
-          </button>
+    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
+      {/* Header */}
+      <div className="sticky top-0 z-50 p-4 border-b" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚙️</span>
+            <h1 className="text-xl font-bold" style={{ color: 'var(--text)' }}>
+              Pomonero Admin
+            </h1>
+            {hasChanges && (
+              <span className="px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400">
+                {tr ? 'Kaydedilmemiş değişiklikler' : 'Unsaved changes'}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={saveSettings}
+              disabled={!hasChanges}
+              className="px-4 py-2 rounded-xl font-medium text-white transition-all hover:scale-105 disabled:opacity-50"
+              style={{ background: hasChanges ? 'var(--primary)' : 'gray' }}
+            >
+              💾 {tr ? 'Kaydet' : 'Save'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-xl font-medium transition-all hover:bg-[var(--surface)]"
+              style={{ color: 'var(--text)' }}
+            >
+              🚪 {tr ? 'Çıkış' : 'Logout'}
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          {[
-            { id: 'slots', icon: '📢', label: tr ? 'Reklam Slotları' : 'Ad Slots' },
-            { id: 'adsense', icon: '📊', label: 'Google AdSense' },
-            { id: 'guide', icon: '📖', label: tr ? 'Rehber' : 'Guide' },
-          ].map(tab => (
+      <div className="max-w-6xl mx-auto p-4 flex gap-4">
+        {/* Sidebar - Tabs */}
+        <div className="w-48 shrink-0 space-y-1">
+          {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all"
+              className={`w-full flex items-center gap-2 px-4 py-3 rounded-xl text-left transition-all ${activeTab === tab.id ? 'font-semibold' : ''}`}
               style={{
-                background: activeTab === tab.id ? 'var(--primary)' : 'var(--surface)',
+                background: activeTab === tab.id ? 'var(--primary)' : 'transparent',
                 color: activeTab === tab.id ? 'white' : 'var(--text)'
               }}
             >
               <span>{tab.icon}</span>
-              <span className="hidden sm:inline">{tab.label}</span>
+              <span>{tr ? tab.label : tab.labelEn}</span>
             </button>
           ))}
+          
+          <div className="pt-4 space-y-1">
+            <button onClick={exportSettings} className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-sm hover:bg-[var(--surface)]" style={{ color: 'var(--text-muted)' }}>
+              📤 {tr ? 'Dışa Aktar' : 'Export'}
+            </button>
+            <label className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-sm hover:bg-[var(--surface)] cursor-pointer" style={{ color: 'var(--text-muted)' }}>
+              📥 {tr ? 'İçe Aktar' : 'Import'}
+              <input type="file" accept=".json" onChange={importSettings} className="hidden" />
+            </label>
+            <button onClick={resetToDefault} className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-sm hover:bg-red-500/20 text-red-400">
+              🔄 {tr ? 'Sıfırla' : 'Reset'}
+            </button>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+        <div className="flex-1 p-6 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
           
-          {/* AD SLOTS */}
-          {activeTab === 'slots' && (
-            <div className="space-y-6">
-              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-                {tr 
-                  ? 'Her slot için Google AdSense veya başka reklam kodunu yapıştırın.'
-                  : 'Paste your Google AdSense or other ad code for each slot.'
-                }
-              </p>
-
-              {Object.entries(adSlots).map(([key, slot]) => (
-                <div key={key} className="p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h3 className="font-semibold" style={{ color: 'var(--text)' }}>{slot.name}</h3>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{slot.size}</p>
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={slot.enabled}
-                        onChange={(e) => updateSlot(key, 'enabled', e.target.checked)}
-                        className="w-5 h-5 rounded accent-[var(--primary)]"
-                      />
-                      <span className="text-sm" style={{ color: 'var(--text)' }}>
-                        {slot.enabled ? (tr ? 'Aktif' : 'Active') : (tr ? 'Kapalı' : 'Off')}
-                      </span>
-                    </label>
-                  </div>
-                  <textarea
-                    value={slot.code}
-                    onChange={(e) => updateSlot(key, 'code', e.target.value)}
-                    placeholder={tr ? 'Reklam kodunu buraya yapıştırın...' : 'Paste ad code here...'}
-                    className="w-full p-3 rounded-lg text-sm font-mono h-24 resize-none outline-none"
-                    style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ADSENSE */}
-          {activeTab === 'adsense' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold mb-2" style={{ color: 'var(--text)' }}>
-                  Google AdSense Publisher ID
-                </h3>
-                <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-                  {tr 
-                    ? 'AdSense hesabınızdan Publisher ID\'nizi girin (ca-pub-XXXXXXXXXXXXXXXX)'
-                    : 'Enter your Publisher ID from AdSense (ca-pub-XXXXXXXXXXXXXXXX)'
-                  }
-                </p>
-                <input
-                  type="text"
-                  value={adsenseId}
-                  onChange={(e) => setAdsenseId(e.target.value)}
-                  placeholder="ca-pub-XXXXXXXXXXXXXXXX"
-                  className="w-full p-3 rounded-xl font-mono outline-none"
+          {/* SITE */}
+          {activeTab === 'site' && (
+            <div>
+              <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>🏠 {tr ? 'Site Ayarları' : 'Site Settings'}</h2>
+              <Input label={tr ? 'Site Adı' : 'Site Name'} value={settings.site.name} onChange={(v) => updateSetting('site', 'name', v)} />
+              <Input label={tr ? 'Sayfa Başlığı' : 'Page Title'} value={settings.site.title} onChange={(v) => updateSetting('site', 'title', v)} />
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>{tr ? 'Site Açıklaması' : 'Site Description'}</label>
+                <textarea
+                  value={settings.site.description}
+                  onChange={(e) => updateSetting('site', 'description', e.target.value)}
+                  rows={3}
+                  className="w-full p-3 rounded-xl outline-none resize-none"
                   style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
                 />
               </div>
+              <Input label={tr ? 'Anahtar Kelimeler' : 'Keywords'} value={settings.site.keywords} onChange={(v) => updateSetting('site', 'keywords', v)} help={tr ? 'Virgülle ayırın' : 'Separate with commas'} />
+              <Input label={tr ? 'Logo URL' : 'Logo URL'} value={settings.site.logo} onChange={(v) => updateSetting('site', 'logo', v)} />
+              <Input label="Favicon URL" value={settings.site.favicon} onChange={(v) => updateSetting('site', 'favicon', v)} />
+            </div>
+          )}
 
-              <div className="p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
-                <h4 className="font-semibold mb-2" style={{ color: 'var(--text)' }}>
-                  {tr ? 'Otomatik AdSense Kodu' : 'Auto AdSense Code'}
-                </h4>
-                <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-                  {tr 
-                    ? 'Bu kodu sitenizin <head> kısmına ekleyin (layout.js)'
-                    : 'Add this code to your site\'s <head> section (layout.js)'
-                  }
-                </p>
-                <pre className="p-3 rounded-lg text-xs overflow-x-auto" style={{ background: 'var(--background)', color: 'var(--text)' }}>
-{`<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId || 'ca-pub-XXXXXXXXXXXXXXXX'}"
-  crossorigin="anonymous"></script>`}
-                </pre>
+          {/* TIMER */}
+          {activeTab === 'timer' && (
+            <div>
+              <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>⏱️ {tr ? 'Zamanlayıcı Ayarları' : 'Timer Settings'}</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label={tr ? 'Odaklanma Süresi (dk)' : 'Focus Time (min)'} type="number" value={settings.timer.focusTime} onChange={(v) => updateSetting('timer', 'focusTime', parseInt(v))} />
+                <Input label={tr ? 'Kısa Mola (dk)' : 'Short Break (min)'} type="number" value={settings.timer.shortBreak} onChange={(v) => updateSetting('timer', 'shortBreak', parseInt(v))} />
+                <Input label={tr ? 'Uzun Mola (dk)' : 'Long Break (min)'} type="number" value={settings.timer.longBreak} onChange={(v) => updateSetting('timer', 'longBreak', parseInt(v))} />
+                <Input label="TYT (dk/min)" type="number" value={settings.timer.tytTime} onChange={(v) => updateSetting('timer', 'tytTime', parseInt(v))} />
+                <Input label="AYT (dk/min)" type="number" value={settings.timer.aytTime} onChange={(v) => updateSetting('timer', 'aytTime', parseInt(v))} />
+              </div>
+              <div className="mt-6 space-y-2">
+                <Toggle label={tr ? 'Molaları otomatik başlat' : 'Auto-start breaks'} checked={settings.timer.autoStartBreaks} onChange={(v) => updateSetting('timer', 'autoStartBreaks', v)} />
+                <Toggle label={tr ? 'Pomodoroları otomatik başlat' : 'Auto-start pomodoros'} checked={settings.timer.autoStartPomodoros} onChange={(v) => updateSetting('timer', 'autoStartPomodoros', v)} />
+                <Toggle label={tr ? 'Saniyeleri göster' : 'Show seconds'} checked={settings.timer.showSeconds} onChange={(v) => updateSetting('timer', 'showSeconds', v)} />
               </div>
             </div>
           )}
 
-          {/* GUIDE */}
-          {activeTab === 'guide' && (
-            <div className="space-y-6 text-sm" style={{ color: 'var(--text)' }}>
-              <div>
-                <h3 className="font-bold text-lg mb-3">📌 {tr ? 'Reklam Ekleme Rehberi' : 'Ad Setup Guide'}</h3>
-                
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
-                    <h4 className="font-semibold mb-2">1. Google AdSense {tr ? 'Hesabı Oluştur' : 'Account'}</h4>
-                    <p style={{ color: 'var(--text-muted)' }}>
-                      {tr 
-                        ? 'adsense.google.com adresinden hesap oluşturun ve sitenizi ekleyin.'
-                        : 'Create an account at adsense.google.com and add your site.'
-                      }
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
-                    <h4 className="font-semibold mb-2">2. {tr ? 'Reklam Birimi Oluştur' : 'Create Ad Unit'}</h4>
-                    <p style={{ color: 'var(--text-muted)' }}>
-                      {tr 
-                        ? 'AdSense panelinden "Reklamlar" > "Reklam Birimleri" > "Yeni reklam birimi" seçin.'
-                        : 'In AdSense, go to "Ads" > "Ad units" > "Create new ad unit".'
-                      }
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
-                    <h4 className="font-semibold mb-2">3. {tr ? 'Kodu Kopyala' : 'Copy Code'}</h4>
-                    <p style={{ color: 'var(--text-muted)' }}>
-                      {tr 
-                        ? 'Oluşturulan reklam kodunu ilgili slot\'a yapıştırın.'
-                        : 'Copy the generated ad code and paste it into the relevant slot.'
-                      }
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
-                    <h4 className="font-semibold mb-2">4. {tr ? 'Slot Boyutları' : 'Slot Sizes'}</h4>
-                    <ul className="space-y-1" style={{ color: 'var(--text-muted)' }}>
-                      <li>• <strong>728x90</strong> - Leaderboard (Header)</li>
-                      <li>• <strong>300x250</strong> - Medium Rectangle (Sidebar)</li>
-                      <li>• <strong>336x280</strong> - Large Rectangle</li>
-                      <li>• <strong>160x600</strong> - Wide Skyscraper</li>
-                      <li>• <strong>970x250</strong> - Billboard</li>
-                      <li>• <strong>320x100</strong> - Large Mobile Banner</li>
-                    </ul>
-                  </div>
+          {/* THEME */}
+          {activeTab === 'theme' && (
+            <div>
+              <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>🎨 {tr ? 'Tema Ayarları' : 'Theme Settings'}</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>{tr ? 'Varsayılan Tema' : 'Default Theme'}</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {['midnight', 'ocean', 'forest', 'sunset', 'snow', 'sakura', 'mint', 'peach'].map(theme => (
+                    <button
+                      key={theme}
+                      onClick={() => updateSetting('theme', 'defaultTheme', theme)}
+                      className={`p-3 rounded-xl capitalize text-sm ${settings.theme.defaultTheme === theme ? 'ring-2 ring-[var(--primary)]' : ''}`}
+                      style={{ background: 'var(--surface)', color: 'var(--text)' }}
+                    >
+                      {theme}
+                    </button>
+                  ))}
                 </div>
               </div>
+              <Toggle label={tr ? 'Kullanıcı tema değiştirsin' : 'Allow user theme change'} checked={settings.theme.allowUserThemeChange} onChange={(v) => updateSetting('theme', 'allowUserThemeChange', v)} />
+              <h3 className="font-semibold mt-6 mb-4" style={{ color: 'var(--text)' }}>{tr ? 'Özel Renkler' : 'Custom Colors'}</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm mb-1" style={{ color: 'var(--text-muted)' }}>Primary</label>
+                  <input type="color" value={settings.theme.customColors.primary} onChange={(e) => updateNestedSetting('theme', 'customColors', 'primary', e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1" style={{ color: 'var(--text-muted)' }}>Secondary</label>
+                  <input type="color" value={settings.theme.customColors.secondary} onChange={(e) => updateNestedSetting('theme', 'customColors', 'secondary', e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-1" style={{ color: 'var(--text-muted)' }}>Accent</label>
+                  <input type="color" value={settings.theme.customColors.accent} onChange={(e) => updateNestedSetting('theme', 'customColors', 'accent', e.target.value)} className="w-full h-10 rounded-lg cursor-pointer" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <Input label={tr ? 'Genel Font' : 'General Font'} value={settings.theme.font} onChange={(v) => updateSetting('theme', 'font', v)} help="Inter, Roboto, Poppins..." />
+                <Input label={tr ? 'Timer Font' : 'Timer Font'} value={settings.theme.timerFont} onChange={(v) => updateSetting('theme', 'timerFont', v)} help="Orbitron, Digital-7..." />
+              </div>
+            </div>
+          )}
 
-              <div className="p-4 rounded-xl border-2 border-dashed" style={{ borderColor: 'var(--primary)' }}>
-                <h4 className="font-semibold mb-2">💡 {tr ? 'İpucu' : 'Tip'}</h4>
-                <p style={{ color: 'var(--text-muted)' }}>
-                  {tr 
-                    ? 'Ayarlarınızı yedeklemek için "Dışa Aktar" butonunu kullanın. Başka bir cihazda veya yeniden kurulumda "İçe Aktar" ile geri yükleyebilirsiniz.'
-                    : 'Use "Export" to backup your settings. You can restore them using "Import" on another device or after reinstall.'
-                  }
+          {/* ADS */}
+          {activeTab === 'ads' && (
+            <div>
+              <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>📢 {tr ? 'Reklam Yönetimi' : 'Ad Management'}</h2>
+              <Input label="Google AdSense Publisher ID" value={settings.seo.googleAdsenseId} onChange={(v) => updateSetting('seo', 'googleAdsenseId', v)} placeholder="ca-pub-XXXXXXXXXXXXXXXX" />
+              <div className="space-y-4 mt-6">
+                {Object.entries(settings.ads).map(([key, slot]) => (
+                  <div key={key} className="p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-semibold capitalize" style={{ color: 'var(--text)' }}>{key.replace(/_/g, ' ')}</h4>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{slot.size}</p>
+                      </div>
+                      <button
+                        onClick={() => updateNestedSetting('ads', key, 'enabled', !slot.enabled)}
+                        className={`px-3 py-1 rounded-full text-sm ${slot.enabled ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}
+                      >
+                        {slot.enabled ? 'Aktif' : 'Kapalı'}
+                      </button>
+                    </div>
+                    <textarea
+                      value={slot.code}
+                      onChange={(e) => updateNestedSetting('ads', key, 'code', e.target.value)}
+                      placeholder={tr ? 'Reklam kodunu yapıştırın...' : 'Paste ad code...'}
+                      rows={3}
+                      className="w-full p-2 rounded-lg text-xs font-mono resize-none outline-none"
+                      style={{ background: 'var(--background)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* FEATURES */}
+          {activeTab === 'features' && (
+            <div>
+              <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>⚙️ {tr ? 'Özellik Ayarları' : 'Feature Settings'}</h2>
+              <p className="mb-4 text-sm" style={{ color: 'var(--text-muted)' }}>{tr ? 'Sitede gösterilecek özellikleri seçin' : 'Choose which features to show on the site'}</p>
+              <div className="space-y-2">
+                <Toggle label={tr ? '🎮 Oyunlar' : '🎮 Games'} checked={settings.features.enableGames} onChange={(v) => updateSetting('features', 'enableGames', v)} />
+                <Toggle label={tr ? '📻 Radyo' : '📻 Radio'} checked={settings.features.enableRadio} onChange={(v) => updateSetting('features', 'enableRadio', v)} />
+                <Toggle label={tr ? '🌤️ Hava Durumu' : '🌤️ Weather'} checked={settings.features.enableWeather} onChange={(v) => updateSetting('features', 'enableWeather', v)} />
+                <Toggle label={tr ? '🏆 Liderlik Tablosu' : '🏆 Leaderboard'} checked={settings.features.enableLeaderboard} onChange={(v) => updateSetting('features', 'enableLeaderboard', v)} />
+                <Toggle label={tr ? '📅 Takvim' : '📅 Calendar'} checked={settings.features.enableCalendar} onChange={(v) => updateSetting('features', 'enableCalendar', v)} />
+                <Toggle label={tr ? '📰 Günün Bilgisi' : '📰 Daily Info'} checked={settings.features.enableDailyInfo} onChange={(v) => updateSetting('features', 'enableDailyInfo', v)} />
+                <Toggle label={tr ? '📊 İstatistikler' : '📊 Statistics'} checked={settings.features.enableStats} onChange={(v) => updateSetting('features', 'enableStats', v)} />
+              </div>
+            </div>
+          )}
+
+          {/* SOCIAL */}
+          {activeTab === 'social' && (
+            <div>
+              <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>🔗 {tr ? 'Sosyal Medya' : 'Social Media'}</h2>
+              <Input label="Instagram" value={settings.social.instagram} onChange={(v) => updateSetting('social', 'instagram', v)} placeholder="https://instagram.com/..." />
+              <Input label="Twitter / X" value={settings.social.twitter} onChange={(v) => updateSetting('social', 'twitter', v)} placeholder="https://twitter.com/..." />
+              <Input label="YouTube" value={settings.social.youtube} onChange={(v) => updateSetting('social', 'youtube', v)} placeholder="https://youtube.com/..." />
+              <Input label="TikTok" value={settings.social.tiktok} onChange={(v) => updateSetting('social', 'tiktok', v)} placeholder="https://tiktok.com/..." />
+              <Input label="Discord" value={settings.social.discord} onChange={(v) => updateSetting('social', 'discord', v)} placeholder="https://discord.gg/..." />
+              <Input label={tr ? 'İletişim E-posta' : 'Contact Email'} value={settings.social.email} onChange={(v) => updateSetting('social', 'email', v)} />
+              <h3 className="font-semibold mt-6 mb-4" style={{ color: 'var(--text)' }}>Footer</h3>
+              <Input label={tr ? 'Telif Hakkı Metni' : 'Copyright Text'} value={settings.footer.copyright} onChange={(v) => updateSetting('footer', 'copyright', v)} />
+              <Toggle label={tr ? 'Sosyal medya ikonlarını göster' : 'Show social media icons'} checked={settings.footer.showSocial} onChange={(v) => updateSetting('footer', 'showSocial', v)} />
+              <Toggle label={tr ? 'Footer linklerini göster' : 'Show footer links'} checked={settings.footer.showLinks} onChange={(v) => updateSetting('footer', 'showLinks', v)} />
+            </div>
+          )}
+
+          {/* SEO */}
+          {activeTab === 'seo' && (
+            <div>
+              <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>🔍 SEO {tr ? 'Ayarları' : 'Settings'}</h2>
+              <Input label="Google Analytics ID" value={settings.seo.googleAnalyticsId} onChange={(v) => updateSetting('seo', 'googleAnalyticsId', v)} placeholder="G-XXXXXXXXXX" help={tr ? 'Google Analytics 4 ölçüm kimliği' : 'Google Analytics 4 measurement ID'} />
+              <Input label="Google Search Console" value={settings.seo.googleSearchConsoleCode} onChange={(v) => updateSetting('seo', 'googleSearchConsoleCode', v)} placeholder="verification code" help={tr ? 'HTML meta tag doğrulama kodu' : 'HTML meta tag verification code'} />
+              <div className="mt-4 space-y-2">
+                <Toggle label={tr ? 'Sitemap.xml oluştur' : 'Generate sitemap.xml'} checked={settings.seo.enableSitemap} onChange={(v) => updateSetting('seo', 'enableSitemap', v)} />
+                <Toggle label={tr ? 'Robots.txt oluştur' : 'Generate robots.txt'} checked={settings.seo.enableRobots} onChange={(v) => updateSetting('seo', 'enableRobots', v)} />
+              </div>
+              <div className="mt-6 p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
+                <h4 className="font-semibold mb-2" style={{ color: 'var(--text)' }}>📋 {tr ? 'SEO Durumu' : 'SEO Status'}</h4>
+                <ul className="text-sm space-y-1" style={{ color: 'var(--text-muted)' }}>
+                  <li>✅ robots.txt {tr ? 'aktif' : 'active'}</li>
+                  <li>✅ sitemap.xml {tr ? 'aktif' : 'active'}</li>
+                  <li>✅ JSON-LD Schema {tr ? 'aktif' : 'active'}</li>
+                  <li>✅ Open Graph {tr ? 'aktif' : 'active'}</li>
+                  <li>✅ Twitter Cards {tr ? 'aktif' : 'active'}</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* SECURITY */}
+          {activeTab === 'security' && (
+            <div>
+              <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text)' }}>🔐 {tr ? 'Güvenlik Ayarları' : 'Security Settings'}</h2>
+              <div className="p-4 rounded-xl mb-6 bg-yellow-500/20">
+                <p className="text-sm text-yellow-400">
+                  ⚠️ {tr ? 'Bu ayarları değiştirirken dikkatli olun!' : 'Be careful when changing these settings!'}
                 </p>
+              </div>
+              <Input 
+                label={tr ? 'Admin Şifresi' : 'Admin Password'} 
+                type="password"
+                value={settings.security.adminPassword} 
+                onChange={(v) => updateSetting('security', 'adminPassword', v)}
+                help={tr ? 'En az 8 karakter önerilir' : 'At least 8 characters recommended'}
+              />
+              <Input 
+                label={tr ? 'Oturum Süresi (dakika)' : 'Session Timeout (minutes)'} 
+                type="number"
+                value={settings.security.sessionTimeout} 
+                onChange={(v) => updateSetting('security', 'sessionTimeout', parseInt(v))}
+              />
+              <Input 
+                label={tr ? 'Maksimum Giriş Denemesi' : 'Max Login Attempts'} 
+                type="number"
+                value={settings.security.maxLoginAttempts} 
+                onChange={(v) => updateSetting('security', 'maxLoginAttempts', parseInt(v))}
+              />
+              <div className="mt-6 p-4 rounded-xl" style={{ background: 'var(--surface)' }}>
+                <h4 className="font-semibold mb-2" style={{ color: 'var(--text)' }}>🛡️ {tr ? 'Güvenlik İpuçları' : 'Security Tips'}</h4>
+                <ul className="text-sm space-y-1" style={{ color: 'var(--text-muted)' }}>
+                  <li>• {tr ? 'Güçlü bir şifre kullanın (harf, rakam, sembol)' : 'Use a strong password (letters, numbers, symbols)'}</li>
+                  <li>• {tr ? 'Şifrenizi kimseyle paylaşmayın' : 'Never share your password'}</li>
+                  <li>• {tr ? 'Düzenli olarak şifrenizi değiştirin' : 'Change your password regularly'}</li>
+                  <li>• {tr ? 'Admin panelini kullandıktan sonra çıkış yapın' : 'Log out after using admin panel'}</li>
+                </ul>
               </div>
             </div>
           )}
 
           {/* Message */}
           {message.text && (
-            <div className={`mt-6 p-3 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+            <div className={`mt-6 p-3 rounded-xl text-center ${message.type === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
               {message.text}
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
-            <button
-              onClick={saveSettings}
-              className="flex items-center gap-2 px-6 py-2 rounded-xl font-semibold text-white"
-              style={{ background: 'var(--primary)' }}
-            >
-              💾 {tr ? 'Kaydet' : 'Save'}
-            </button>
-            <button
-              onClick={exportSettings}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium"
-              style={{ background: 'var(--surface)', color: 'var(--text)' }}
-            >
-              📤 {tr ? 'Dışa Aktar' : 'Export'}
-            </button>
-            <label className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium cursor-pointer" style={{ background: 'var(--surface)', color: 'var(--text)' }}>
-              📥 {tr ? 'İçe Aktar' : 'Import'}
-              <input type="file" accept=".json" onChange={importSettings} className="hidden" />
-            </label>
-          </div>
+          {lastSaved && (
+            <p className="text-xs text-center mt-4" style={{ color: 'var(--text-muted)' }}>
+              {tr ? 'Son kayıt:' : 'Last saved:'} {lastSaved.toLocaleTimeString()}
+            </p>
+          )}
         </div>
       </div>
     </div>

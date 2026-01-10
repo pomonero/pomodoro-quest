@@ -272,12 +272,11 @@ export default function Timer() {
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-4xl mb-2">{currentPreset.icon}</span>
           <span 
-            className="text-4xl sm:text-5xl md:text-6xl font-bold" 
+            className="text-5xl sm:text-6xl md:text-7xl font-black tracking-wider" 
             style={{ 
               color: 'var(--text)', 
               fontFamily: "'Orbitron', sans-serif",
-              letterSpacing: '0.05em',
-              textShadow: `0 0 20px ${currentPreset.color}40`
+              textShadow: `0 0 30px ${currentPreset.color}50, 0 0 60px ${currentPreset.color}30`
             }}
           >
             {formatTime(timeLeft)}
